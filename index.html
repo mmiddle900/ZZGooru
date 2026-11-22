@@ -5,7 +5,7 @@
 </style></head><body><main><header><h1>김희범과 레치타티보</h1><div><button id="save">저장</button> <button id="reset">처음부터</button></div></header>
 <div id="stage"><canvas id="map" width="640" height="416" aria-label="RPG 맵"></canvas><div id="dialog" class="dialog" hidden><div class="speaker" id="speaker"></div><div class="line" id="line"></div><button id="advance">확인 ▶</button></div></div>
 <div class="inventory"><span class="inventory-label">인벤토리</span><div class="slots"><div id="slot1" class="slot empty" title="비어 있음">·</div><div id="slot2" class="slot empty" title="비어 있음">·</div><div id="slot3" class="slot empty" title="비어 있음">·</div><div id="slot4" class="slot empty" title="비어 있음">·</div><div id="slot5" class="slot empty" title="비어 있음">·</div></div></div><div class="combat-hud"><span>김희범 HP <b id="hpText">100/100</b></span><div class="bar"><span id="hpBar"></span></div><span id="enemyText">주변을 조사하자</span><span>스테미나 <b id="staminaText">100/100</b></span><div class="bar" style="background:#263b2d;border-color:#55775b"><span id="staminaBar" style="background:#55d68a;width:100%"></span></div></div><div class="hud"><span id="status">김희범(슬라임) · 레치타티보</span><span class="help">이동: 방향키 / WASD · 상호작용: Space 또는 Enter</span></div>
-<div class="mobile"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><div style="display:flex;gap:8px"><button id="action">조사 / 대화</button><button id="attackBtn">검 공격</button></div></div>
+<div class="mobile"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><div style="display:flex;gap:8px"><button id="sprintBtn">달리기</button><button id="action">조사 / 대화</button><button id="attackBtn">검 공격</button></div></div>
 </main>
 <script>
 "use strict";
@@ -40,14 +40,15 @@ function tileBlocked(x,y){
 // 캐릭터 원형 충돌 판정: 모서리만 검사하지 않고 주변 타일 사각형과 원의 거리로 판정
 const playerRadius=.34;
 function pass(cx,cy){
- const minX=Math.floor(cx-playerRadius),maxX=Math.floor(cx+playerRadius);
- const minY=Math.floor(cy-playerRadius),maxY=Math.floor(cy+playerRadius);
+ if(!Number.isFinite(cx)||!Number.isFinite(cy))return false;
+ const r=playerRadius, minX=Math.floor(cx-r),maxX=Math.floor(cx+r);
+ const minY=Math.floor(cy-r),maxY=Math.floor(cy+r),r2=r*r;
  for(let ty=minY;ty<=maxY;ty++)for(let tx=minX;tx<=maxX;tx++){
   if(!tileBlocked(tx,ty))continue;
-  const closestX=Math.max(tx,Math.min(cx,tx+1));
-  const closestY=Math.max(ty,Math.min(cy,ty+1));
-  const ox=cx-closestX,oy=cy-closestY;
-  if(ox*ox+oy*oy<playerRadius*playerRadius)return false;
+  // Circle-vs-tile: nearest point on the solid tile; prevents corner clipping.
+  const qx=Math.max(tx,Math.min(cx,tx+1)),qy=Math.max(ty,Math.min(cy,ty+1));
+  const ox=cx-qx,oy=cy-qy;
+  if(ox*ox+oy*oy<r2-1e-9)return false;
  }
  return true;
 }
@@ -115,7 +116,7 @@ function update(dt){
   const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};
   const speed=3.2*(sprinting?1.5:1);
   // 작은 단계로 나눠 이동해 벽/나무를 통과하는 현상 방지, 축별 판정으로 벽을 따라 이동 가능
-  const distance=speed*dt,steps=Math.max(1,Math.ceil(distance/.08)),stepX=dx*distance/steps,stepY=dy*distance/steps;
+  const distance=speed*dt,steps=Math.max(1,Math.ceil(distance/.04)),stepX=dx*distance/steps,stepY=dy*distance/steps;
   for(let i=0;i<steps;i++){
    if(pass(player.x+stepX,player.y))player.x+=stepX;
    if(pass(player.x,player.y+stepY))player.y+=stepY;
@@ -174,10 +175,38 @@ function render(){
  const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
  const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
 }
-function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
-document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key==="Shift")pressed.run=true;if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
-document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;if(e.key==="Shift")pressed.run=false;});
-document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
+function dir(e){
+ const code=e.code||"",key=(e.key||"").toLowerCase();
+ return ({ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"})[code]||({w:"up",s:"down",a:"left",d:"right"})[key];
+}
+function clearInput(){pressed={};}
+document.addEventListener("keydown",e=>{
+ const d=dir(e);
+ const action=e.code==="Space"||e.code==="Enter"||e.key===" ";
+ const attackKey=["KeyZ","KeyJ"].includes(e.code)||["z","j"].includes((e.key||"").toLowerCase());
+ if(d||e.code==="ShiftLeft"||e.code==="ShiftRight"||action||attackKey)e.preventDefault();
+ if(e.repeat)return;
+ if(dialogue){if(action||e.code==="Enter")closeTalk();return;}
+ if(d)pressed[d]=true;
+ if(e.code==="ShiftLeft"||e.code==="ShiftRight")pressed.run=true;
+ if(action)interact();
+ if(attackKey)attack();
+});
+document.addEventListener("keyup",e=>{
+ const d=dir(e);if(d)pressed[d]=false;
+ if(e.code==="ShiftLeft"||e.code==="ShiftRight")pressed.run=false;
+});
+window.addEventListener("blur",clearInput);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)clearInput();});
+document.querySelectorAll("[data-dir]").forEach(b=>{
+ const d=b.dataset.dir;
+ b.addEventListener("pointerdown",e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);pressed[d]=true;});
+ const release=e=>{pressed[d]=false;};
+ ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,release));
+});
+const sprintBtn=$("sprintBtn");
+sprintBtn.addEventListener("pointerdown",e=>{e.preventDefault();sprintBtn.setPointerCapture?.(e.pointerId);pressed.run=true;});
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>sprintBtn.addEventListener(ev,()=>pressed.run=false));
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
 $("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
