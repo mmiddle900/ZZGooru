@@ -54,20 +54,7 @@ function pass(cx,cy){
   const ox=wx-qx,oy=wy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
  }
- // 숲의 나무 줄기 충돌. 길 위에서는 길 타일을 우선해 나무 장식의 겹침으로 이동이 막히지 않게 한다.
- if(!pathAt(cx,cy)){
-  const trunkLeft=13/32,trunkTop=18/32,trunkW=7/32,trunkH=12/32;
-  const minTX=Math.floor(wx-r)-1,maxTX=Math.floor(wx+r)+1;
-  const minTY=Math.floor(wy-r)-1,maxTY=Math.floor(wy+r)+1;
-  for(let ty=minTY;ty<=maxTY;ty++)for(let tx=minTX;tx<=maxTX;tx++){
-   if(!treeAt(tx,ty))continue;
-   const left=tx+trunkLeft,top=ty+trunkTop;
-   const qx=Math.max(left,Math.min(wx,left+trunkW));
-   const qy=Math.max(top,Math.min(wy,top+trunkH));
-   const ox=wx-qx,oy=wy-qy;
-   if(ox*ox+oy*oy<r2-1e-9)return false;
-  }
- }
+ // Tree collision temporarily disabled to restore reliable movement; keep map bounds and pond collision.
  return true;
 }
 function talk(s,speaker="나레이션"){pressed={};dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
@@ -269,6 +256,7 @@ $("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){loca
 load();enemy.alive=false;pressed={};heldKeys.clear();
 // 저장 좌표가 나무/벽 충돌 안에 갇혀 있으면 가장 가까운 이동 가능한 좌표로 복구
 if(!pass(player.x,player.y)){let found=false;for(let radius=1;radius<=12&&!found;radius++){for(let oy=-radius;oy<=radius&&!found;oy++)for(let ox=-radius;ox<=radius&&!found;ox++){if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;const nx=player.x+ox,ny=player.y+oy;if(pass(nx,ny)){player.x=nx;player.y=ny;found=true;}}}}
-render();if(!localStorage.getItem(saveKey)&&!localStorage.getItem(legacySaveKey)&&!localStorage.getItem("zzgooru_rpg_save_v11")&&!localStorage.getItem("zzgooru_rpg_save_v10"))playIntro();
+// Always start in controllable gameplay state; stale cutscene state must never lock movement.
+cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
