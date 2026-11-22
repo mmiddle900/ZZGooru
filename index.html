@@ -8,59 +8,82 @@
 <div class="mobile"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><div style="display:flex;gap:8px"><button id="action">조사 / 대화</button><button id="attackBtn">검 공격</button></div></div>
 </main>
 <script>
-const c=document.getElementById('map'),ctx=c.getContext('2d'),tile=32,cols=20,rows=13;
-const saveKey='zzgooru_rpg_save_v1';
-let px=9,py=8,hasSword=false,seenLetter=false,dialogue=null,di=0,mapId=0;
-let facing={x:0,y:-1},keysDown={},lastFrame=0,animTime=0,playerHP=100,enemy={x:10,y:6,hp:100,alive:true},attackCD=0,enemyHitCD=0,invuln=0;
-const moveSpeed=3.5;
-const lines={
-intro:[['나레이션','김희범은 낯선 방에서 눈을 떴다.'],['김희범','…여기는 어디지?'],['나레이션','침대 옆에 낯익은 검이 놓여 있다.'],['김희범','내 검, 레치타티보!']],
-sword:[['김희범','레치타티보를 손에 쥐었다. 이제 움직일 수 있겠어.']],
-npc:[['낯선 사람','드디어 깨어났군, 김희범.'],['김희범','당신은 누구지?'],['낯선 사람','마을 입구에 편지가 있어. 네가 직접 확인해 봐.']],
-letter:[['나레이션','편지에는 이렇게 적혀 있었다.'],['편지','“레치타티보를 가진 자여, 북쪽 숲으로 향하라.”'],['김희범','북쪽 숲… 무슨 일이 벌어진 거지?']],
-door:[['나레이션','문이 잠겨 있다. 레치타티보를 찾고 나면 열릴 것 같다.']],
-forest:[['나레이션','김희범은 마을 밖으로 나왔다. 저 멀리 숲길이 이어진다.'],['김희범','편지에 적힌 북쪽 숲으로 가야 해.']]
-};
-function startTalk(key){dialogue=lines[key]||[['나레이션','아무 일도 일어나지 않았다.']];di=0;showLine();}
-function showLine(){if(!dialogue){document.getElementById('dialog').hidden=true;return;}document.getElementById('dialog').hidden=false;document.getElementById('speaker').textContent=dialogue[di][0];document.getElementById('line').textContent=dialogue[di][1];}
-function advance(){if(!dialogue)return;di++;if(di>=dialogue.length){dialogue=null;document.getElementById('dialog').hidden=true;saveGame();return;}showLine();}
-function tileAt(x,y){if(x<0||y<0||x>=cols||y>=rows)return 1;if(mapId===1){if(y===0||x===0||x===cols-1||y===rows-1)return 1;return (x===5&&y>2&&y<10)||(x===14&&y>1&&y<8)?1:0;}
-if(x===0||y===0||x===cols-1||y===rows-1)return 1;
-// furniture / walls inside bedroom
-if(y===2&&x>=3&&x<=7)return 1;if(x===3&&y>=3&&y<=5)return 1;
-if(x===13&&y>=2&&y<=4)return 1;
-return 0;}
-function objectAt(x,y){if(mapId===0){if(x===10&&y===5)return 'sword';if(x===9&&y===1)return 'door';if(x===15&&y===7)return 'npc';}else{if(x===10&&y===2)return 'letter';if(x===10&&y===1)return 'exit';}return null;}
-function interact(){if(dialogue){advance();return;}let tx=Math.round(px+facing.x),ty=Math.round(py+facing.y);let obj=objectAt(tx,ty)||objectAt(Math.round(px),Math.round(py)-1)||objectAt(Math.round(px)+1,Math.round(py))||objectAt(Math.round(px)-1,Math.round(py))||objectAt(Math.round(px),Math.round(py)+1);if(obj==='sword'){if(!hasSword){hasSword=true;startTalk('sword');}else startTalk('sword');}
-else if(obj==='door'){if(!hasSword)startTalk('door');else{mapId=1;px=10;py=10;startTalk('forest');}}
-else if(obj==='npc')startTalk('npc');else if(obj==='letter'){seenLetter=true;startTalk('letter');}else if(obj==='exit'){mapId=0;px=9;py=2;startTalk('forest');}else startTalk('door');}
-function canStand(x,y){const r=.24;return tileAt(Math.floor(x-r),Math.floor(y-r))!==1&&tileAt(Math.floor(x+r),Math.floor(y-r))!==1&&tileAt(Math.floor(x-r),Math.floor(y+r))!==1&&tileAt(Math.floor(x+r),Math.floor(y+r))!==1;}
-function move(dx,dy){if(dialogue)return;let len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;facing={x:dx,y:dy};const nx=px+dx*.12,ny=py+dy*.12;if(canStand(nx,ny)){px=nx;py=ny;}draw();}
-function attack(){if(dialogue||!hasSword||attackCD>0)return;attackCD=.42;animTime=.18;if(mapId===1&&enemy.alive){const dx=enemy.x-px,dy=enemy.y-py,dist=Math.hypot(dx,dy),dot=(dx*facing.x+dy*facing.y)/(dist||1);if(dist<1.55&&dot>.15){enemy.hp=Math.max(0,enemy.hp-34);if(enemy.hp===0)enemy.alive=false;}}draw();}
-function tick(dt){if(dialogue)return;attackCD=Math.max(0,attackCD-dt);enemyHitCD=Math.max(0,enemyHitCD-dt);invuln=Math.max(0,invuln-dt);animTime=Math.max(0,animTime-dt);
-let dx=(keysDown.right?1:0)-(keysDown.left?1:0),dy=(keysDown.down?1:0)-(keysDown.up?1:0);if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};const nx=px+dx*moveSpeed*dt,ny=py+dy*moveSpeed*dt;if(canStand(nx,py))px=nx;if(canStand(px,ny))py=ny;}
-if(playerHP<=0){playerHP=100;px=10;py=10;mapId=1;enemy={x:10,y:6,hp:100,alive:true};saveGame();return;}if(mapId===1&&enemy.alive){const ex=px-enemy.x,ey=py-enemy.y,d=Math.hypot(ex,ey);if(d>0.62){const vx=ex/d*1.35*dt,vy=ey/d*1.35*dt;if(canStand(enemy.x+vx,enemy.y))enemy.x+=vx;if(canStand(enemy.x,enemy.y+vy))enemy.y+=vy;}if(d<.72&&enemyHitCD<=0&&invuln<=0){playerHP=Math.max(0,playerHP-8);enemyHitCD=.8;invuln=.55;}}
-saveGame();}
-function draw(){updateInventory();ctx.clearRect(0,0,c.width,c.height);
-for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){let wall=tileAt(x,y),xx=x*tile,yy=y*tile;
-ctx.fillStyle=mapId===0?(wall?'#6d5948':'#b99a70'):(wall?'#293d35':'#527b4d');ctx.fillRect(xx,yy,tile,tile);
-ctx.strokeStyle=mapId===0?'#9e815d':'#426742';ctx.strokeRect(xx,yy,tile,tile);
-if(mapId===0&&wall){ctx.fillStyle='#4a3a34';ctx.fillRect(xx+3,yy+3,26,26);}
+"use strict";
+const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
+const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v1";
+let player={x:9,y:8,hp:100,hasSword:false,map:0,letter:false};
+let facing={x:0,y:-1},pressed={},last=0,dialogue=false,enemy={x:10,y:6,hp:100,alive:true},attackWait=0,enemyWait=0;
+const $=id=>document.getElementById(id);
+function tileBlocked(x,y){
+ if(x<0||y<0||x>=cols||y>=rows)return true;
+ if(x===0||y===0||x===cols-1||y===rows-1)return true;
+ if(player.map===0)return (y===2&&x>=3&&x<=7)||(x===3&&y>=3&&y<=5)||(x===13&&y>=2&&y<=4);
+ return (x===5&&y>2&&y<10)||(x===14&&y>1&&y<8);
 }
-if(mapId===0){if(!hasSword)drawObject(10,5,'⚔','#f2d16b');drawObject(9,1,'🚪','#a87945');drawObject(15,7,'?','#c6d8ff');drawObject(5,4,'🛏','#d5d5e8');drawObject(13,3,'▤','#6d402f');}
-else{drawObject(10,2,seenLetter?'✓':'✉','#f4e6bd');drawObject(10,1,'⇧','#d7e6ff');}
-const x=px*tile,y=py*tile;/* 김희범: 슬라임 */ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(x+16,y+26,13,4,0,0,Math.PI*2);ctx.fill();const bob=Math.sin(performance.now()/110)*1.5;ctx.fillStyle='#42d9a0';ctx.beginPath();ctx.moveTo(x+3,y+25+bob);ctx.quadraticCurveTo(x+2,y+10+bob,x+10,y+8+bob);ctx.quadraticCurveTo(x+16,y-2+bob,x+22,y+8+bob);ctx.quadraticCurveTo(x+31,y+12+bob,x+29,y+25+bob);ctx.quadraticCurveTo(x+16,y+32+bob,x+3,y+25+bob);ctx.fill();ctx.strokeStyle='#1b9b78';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#123f37';ctx.fillRect(x+12,y+14+bob,2,2);ctx.fillRect(x+22,y+14+bob,2,2);ctx.strokeStyle='#174f48';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+12,y+22);ctx.quadraticCurveTo(x+16,y+25,x+20,y+22);ctx.stroke();
-if(hasSword){ctx.save();ctx.translate(x+16,y+17+bob);ctx.rotate(Math.atan2(facing.y,facing.x)+(attackCD>.22?-.65:0));ctx.strokeStyle='#e7eaf2';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(22,0);ctx.stroke();ctx.strokeStyle='#b28a58';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(5,0);ctx.lineTo(10,0);ctx.stroke();ctx.restore();}
-ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.fillText('김희범',x-8,y-5);if(mapId===1&&enemy.alive){const ex=enemy.x*tile,ey=enemy.y*tile;ctx.fillStyle='#0005';ctx.beginPath();ctx.ellipse(ex+16,ey+26,13,4,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d95b68';ctx.beginPath();ctx.arc(ex+16,ey+17,13,0,Math.PI*2);ctx.fill();ctx.fillStyle='#451b27';ctx.fillRect(ex+11,ey+14,3,3);ctx.fillRect(ex+19,ey+14,3,3);ctx.fillStyle='#27151c';ctx.fillRect(ex+2,ey+1,28,4);ctx.fillStyle='#f05a68';ctx.fillRect(ex+2,ey+1,28*enemy.hp/100,4);}}
-function drawObject(x,y,s,color){let xx=x*tile,yy=y*tile;ctx.fillStyle='#0005';ctx.fillRect(xx+4,yy+5,24,24);ctx.fillStyle=color;ctx.font='24px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s,xx+16,yy+16);ctx.textAlign='start';ctx.textBaseline='alphabetic';}
-function updateInventory(){const slots=[document.getElementById('slot1'),document.getElementById('slot2'),document.getElementById('slot3'),document.getElementById('slot4'),document.getElementById('slot5')];slots.forEach((el,i)=>{if(i===0&&hasSword){el.className='slot';el.title='레치타티보';el.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{el.className='slot empty';el.title='비어 있음';el.textContent='·';}});}
-function saveGame(){try{localStorage.setItem(saveKey,JSON.stringify({px,py,hasSword,seenLetter,mapId,playerHP,enemy}));}catch(e){}}
-function loadGame(){try{let s=JSON.parse(localStorage.getItem(saveKey));if(s){px=s.px??9;py=s.py??8;hasSword=!!s.hasSword;seenLetter=!!s.seenLetter;mapId=s.mapId??0;playerHP=s.playerHP??100;if(s.enemy)enemy=s.enemy;}}catch(e){}}
-function keyDir(k){if(k==='ArrowUp'||k==='w')return 'up';if(k==='ArrowDown'||k==='s')return 'down';if(k==='ArrowLeft'||k==='a')return 'left';if(k==='ArrowRight'||k==='d')return 'right';return null;}
-document.addEventListener('keydown',e=>{const d=keyDir(e.key);if(d){e.preventDefault();keysDown[d]=true;}if(e.key===' '||e.key==='Enter'){e.preventDefault();interact();}if(e.key.toLowerCase()==='z'||e.key.toLowerCase()==='j'){e.preventDefault();attack();}});
-document.addEventListener('keyup',e=>{const d=keyDir(e.key);if(d)keysDown[d]=false;});
-document.querySelectorAll('[data-dir]').forEach(b=>{const d=b.dataset.dir;b.addEventListener('pointerdown',e=>{e.preventDefault();keysDown[d]=true;});['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keysDown[d]=false));});
-document.getElementById('action').onclick=interact;document.getElementById('attackBtn').onclick=attack;document.getElementById('advance').onclick=advance;document.getElementById('save').onclick=()=>{saveGame();document.getElementById('status').textContent='저장 완료 · 김희범 / 레치타티보';};document.getElementById('reset').onclick=()=>{if(confirm('처음부터 다시 시작할까요?')){px=9;py=8;hasSword=false;seenLetter=false;mapId=0;playerHP=100;enemy={x:10,y:6,hp:100,alive:true};dialogue=null;localStorage.removeItem(saveKey);draw();startTalk('intro');}};
-loadGame();updateInventory();draw();if(!localStorage.getItem(saveKey))startTalk('intro');
-function frame(t){const dt=Math.min((t-lastFrame)/1000||0,.04);lastFrame=t;tick(dt);draw();document.getElementById('hpText').textContent=playerHP+'/100';document.getElementById('hpBar').style.width=playerHP+'%';document.getElementById('enemyText').textContent=mapId===1?(enemy.alive?'숲의 슬라임: '+enemy.hp+' HP':'숲의 슬라임 처치!'):'숲에서 적을 만날 수 있다';requestAnimationFrame(frame);}requestAnimationFrame(frame);
+function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
+function talk(s){dialogue=true;$("dialog").hidden=false;$("speaker").textContent="나레이션";$("line").textContent=s;}
+function closeTalk(){dialogue=false;$("dialog").hidden=true;save();}
+function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(saveKey)||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;}}catch(e){}}
+function interact(){
+ if(dialogue){closeTalk();return;}
+ const tx=Math.round(player.x+facing.x),ty=Math.round(player.y+facing.y);
+ if(player.map===0&&tx===10&&ty===5&&!player.hasSword){player.hasSword=true;talk("레치타티보를 주웠다!");}
+ else if(player.map===0&&((tx===9&&ty===1)||(Math.round(player.x)===9&&Math.round(player.y)<=2))){
+  if(!player.hasSword)talk("문이 잠겨 있다. 레치타티보를 찾아야 한다.");
+  else{player.map=1;player.x=10;player.y=10;enemy={x:10,y:6,hp:100,alive:true};talk("숲에 들어섰다. 붉은 슬라임이 다가온다!");}
+ }
+ else if(player.map===1&&tx===10&&ty===2){player.letter=true;talk("편지: 레치타티보를 가진 자여, 북쪽 숲으로 향하라.");}
+ else if(player.map===1&&tx===10&&ty===1){player.map=0;player.x=9;player.y=2;talk("방으로 돌아왔다.");}
+ else if(player.map===0&&tx===15&&ty===7)talk("낯선 사람: 마을 입구의 편지를 확인해 봐.");
+ else talk("주변을 살펴보았다.");
+ save();render();
+}
+function attack(){
+ if(dialogue||!player.hasSword||attackWait>0)return;
+ attackWait=.35;
+ if(player.map===1&&enemy.alive){
+  const dx=enemy.x-player.x,dy=enemy.y-player.y,d=Math.hypot(dx,dy)||1;
+  if(d<1.55&&(dx*facing.x+dy*facing.y)/d>.1){enemy.hp=Math.max(0,enemy.hp-35);if(enemy.hp===0)enemy.alive=false;}
+ }
+ render();
+}
+function update(dt){
+ attackWait=Math.max(0,attackWait-dt);enemyWait=Math.max(0,enemyWait-dt);
+ let dx=(pressed.right?1:0)-(pressed.left?1:0),dy=(pressed.down?1:0)-(pressed.up?1:0);
+ if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};const speed=3.2,nx=player.x+dx*speed*dt,ny=player.y+dy*speed*dt;if(pass(nx,player.y))player.x=nx;if(pass(player.x,ny))player.y=ny;}
+ if(player.map===1&&enemy.alive){
+  const dx=player.x-enemy.x,dy=player.y-enemy.y,d=Math.hypot(dx,dy)||1;
+  if(d>.65){const vx=dx/d*1.2*dt,vy=dy/d*1.2*dt;if(pass(enemy.x+vx,enemy.y))enemy.x+=vx;if(pass(enemy.x,enemy.y+vy))enemy.y+=vy;}
+  if(d<.75&&enemyWait<=0){player.hp=Math.max(0,player.hp-10);enemyWait=.8;}
+ }
+ if(player.hp<=0){player.hp=100;player.x=10;player.y=10;enemy={x:10,y:6,hp:100,alive:true};talk("쓰러졌다! 숲 입구에서 다시 일어났다.");}
+}
+function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
+function render(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+  const wall=tileBlocked(x,y);ctx.fillStyle=player.map===0?(wall?"#6b5847":"#b99a70"):(wall?"#293d35":"#527b4d");ctx.fillRect(x*tile,y*tile,tile,tile);ctx.strokeStyle=player.map===0?"#9e815d":"#426742";ctx.strokeRect(x*tile,y*tile,tile,tile);
+ }
+ if(player.map===0){if(!player.hasSword)obj(10,5,"✦","#ffe18a");obj(9,1,"🚪","#fff");obj(15,7,"?","#dbe5ff");obj(5,4,"🛏","#eee");}
+ else{obj(10,2,player.letter?"✓":"✉","#fff0c7");obj(10,1,"⇧","#fff");}
+ const x=player.x*tile,y=player.y*tile,b=Math.sin(performance.now()/130)*1.4;
+ ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(x+16,y+26,13,4,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.moveTo(x+3,y+25+b);ctx.quadraticCurveTo(x+2,y+10+b,x+10,y+8+b);ctx.quadraticCurveTo(x+16,y-2+b,x+22,y+8+b);ctx.quadraticCurveTo(x+31,y+12+b,x+29,y+25+b);ctx.quadraticCurveTo(x+16,y+32+b,x+3,y+25+b);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle="#123f37";ctx.fillRect(x+12,y+14+b,2,2);ctx.fillRect(x+22,y+14+b,2,2);
+ ctx.fillStyle="#fff";ctx.font="bold 13px system-ui";ctx.fillText("김희범",x-8,y-5);
+ if(player.hasSword){ctx.save();ctx.translate(x+16,y+17+b);ctx.rotate(Math.atan2(facing.y,facing.x));ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(23,0);ctx.stroke();ctx.restore();}
+ if(player.map===1&&enemy.alive){const ex=enemy.x*tile,ey=enemy.y*tile;ctx.fillStyle="#d95b68";ctx.beginPath();ctx.arc(ex+16,ey+17,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#24151c";ctx.fillRect(ex+11,ey+14,2,2);ctx.fillRect(ex+19,ey+14,2,2);ctx.fillStyle="#f05a68";ctx.fillRect(ex+2,ey+1,28*enemy.hp/100,4);}
+ $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("enemyText").textContent=player.map===1?(enemy.alive?"숲의 슬라임 "+enemy.hp+" HP":"슬라임 처치!"):"숲에서 적을 만날 수 있다";
+ const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
+}
+function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
+document.addEventListener("keydown",e=>{const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
+document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;});
+document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
+$("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
+$("save").onclick=()=>{save();$("status").textContent="저장 완료";};
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:9,y:8,hp:100,hasSword:false,map:0,letter:false};enemy={x:10,y:6,hp:100,alive:true};closeTalk();render();talk("김희범은 낯선 방에서 눈을 떴다.");}};
+load();render();
+let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
