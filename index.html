@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v11";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v12";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -43,27 +43,27 @@ function tileBlocked(x,y){
 const playerRadius=.34,treeTrunkRadius=.13;
 function pass(cx,cy){
  if(!Number.isFinite(cx)||!Number.isFinite(cy))return false;
- const r=playerRadius,minX=Math.floor(cx-r),maxX=Math.floor(cx+r);
- const minY=Math.floor(cy-r),maxY=Math.floor(cy+r),r2=r*r;
- // 지도 경계와 연못은 타일 단위로 막는다.
+ // player.x/y are tile coordinates; the sprite center is at tile + 0.5.
+ const wx=cx+.5,wy=cy+.5,r=playerRadius,r2=r*r;
+ const minX=Math.floor(wx-r),maxX=Math.floor(wx+r);
+ const minY=Math.floor(wy-r),maxY=Math.floor(wy+r);
+ // Tile obstacles (world border and pond): circle vs tile rectangle.
  for(let ty=minY;ty<=maxY;ty++)for(let tx=minX;tx<=maxX;tx++){
   if(!tileBlocked(tx,ty))continue;
-  const qx=Math.max(tx,Math.min(cx,tx+1)),qy=Math.max(ty,Math.min(cy,ty+1));
-  const ox=cx-qx,oy=cy-qy;
+  const qx=Math.max(tx,Math.min(wx,tx+1)),qy=Math.max(ty,Math.min(wy,ty+1));
+  const ox=wx-qx,oy=wy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
  }
- // Circle-vs-rectangle collision with the visible tree trunk.
- const r=playerRadius,r2=r*r;
- const trunkLeft=10/32,trunkTop=17/32,trunkW=12/32,trunkH=14/32;
- // Search a safely expanded neighborhood; do not miss nearby tree tiles.
- const minTX=Math.floor(cx-r)-1,maxTX=Math.floor(cx+r)+1;
- const minTY=Math.floor(cy-r)-1,maxTY=Math.floor(cy+r)+1;
+ // Tree trunks use the exact rectangle drawn in render().
+ const trunkLeft=13/32,trunkTop=18/32,trunkW=7/32,trunkH=12/32;
+ const minTX=Math.floor(wx-r)-1,maxTX=Math.floor(wx+r)+1;
+ const minTY=Math.floor(wy-r)-1,maxTY=Math.floor(wy+r)+1;
  for(let ty=minTY;ty<=maxTY;ty++)for(let tx=minTX;tx<=maxTX;tx++){
   if(!treeAt(tx,ty))continue;
   const left=tx+trunkLeft,top=ty+trunkTop;
-  const qx=Math.max(left,Math.min(cx,left+trunkW));
-  const qy=Math.max(top,Math.min(cy,top+trunkH));
-  const ox=cx-qx,oy=cy-qy;
+  const qx=Math.max(left,Math.min(wx,left+trunkW));
+  const qy=Math.max(top,Math.min(wy,top+trunkH));
+  const ox=wx-qx,oy=wy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
  }
  return true;
