@@ -10,9 +10,9 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v1";
-let player={x:9,y:8,hp:100,hasSword:false,map:0,letter:false};
-let facing={x:0,y:-1},pressed={},last=0,dialogue=false,enemy={x:10,y:6,hp:100,alive:true},attackWait=0,enemyWait=0;
+const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v2";
+let player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};
+let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:true},attackWait=0,enemyWait=0;
 const $=id=>document.getElementById(id);
 function tileBlocked(x,y){
  if(x<0||y<0||x>=cols||y>=rows)return true;
@@ -21,8 +21,21 @@ function tileBlocked(x,y){
  return (x===5&&y>2&&y<10)||(x===14&&y>1&&y<8);
 }
 function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
-function talk(s){dialogue=true;$("dialog").hidden=false;$("speaker").textContent="나레이션";$("line").textContent=s;}
-function closeTalk(){dialogue=false;$("dialog").hidden=true;save();}
+function talk(s,speaker="나레이션"){dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
+function playIntro(){
+ cutsceneQueue=[
+  ["김희범","아 씨발... 여기가 어디야"],
+  ["나레이션","김희범은 주변을 둘러본다"],
+  ["김희범","너거매... 난 분명 헨리랑 $$ 하고 있었는데..."],
+  ["나레이션","주변을 조사하자"]
+ ];
+ advanceCutscene();
+}
+function advanceCutscene(){
+ if(cutsceneQueue&&cutsceneQueue.length){const line=cutsceneQueue.shift();talk(line[1],line[0]);}
+ else{cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;save();}
+}
+function closeTalk(){if(cutsceneQueue){advanceCutscene();return;}dialogue=false;$("dialog").hidden=true;save();}
 function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem(saveKey)||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;}}catch(e){}}
 function interact(){
@@ -85,7 +98,7 @@ document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;}
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:9,y:8,hp:100,hasSword:false,map:0,letter:false};enemy={x:10,y:6,hp:100,alive:true};closeTalk();render();talk("김희범은 낯선 방에서 눈을 떴다.");}};
-load();render();
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};enemy={x:10,y:6,hp:100,alive:true};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+load();render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
