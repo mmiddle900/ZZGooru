@@ -12,7 +12,9 @@
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13",legacySaveKey="zzgooru_rpg_save_v12";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};
-let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null,campRoseDown=false,campRoseHealed=false;\nconst damageNumbers=[];\nfunction showDamage(x,y,amount,color="#fff"){damageNumbers.push({x,y,text:String(amount),color,life:.85,max:.85});}
+let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null,campRoseDown=false,campRoseHealed=false;
+const damageNumbers=[];
+function showDamage(x,y,amount,color="#fff"){damageNumbers.push({x,y,text:String(amount),color,life:.85,max:.85});}
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
  const pts=[[12,35],[18,29],[20,26],[16,18],[21,19],[23,22],[31,24],[39,29],[47,34],[56,34],[65,30],[75,30],[86,36]];
