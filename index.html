@@ -158,7 +158,7 @@ function update(dt){
   stepTimer-=dt;
   if(stepTimer<=0){
    playFootstep(groundType(player.x,player.y),sprinting);
-   stepTimer=sprinting?.30:.43;
+   stepTimer=sprinting ? 0.30 : 0.43;
   }
  }else stepTimer=0;
  if(sprinting)player.stamina=Math.max(0,player.stamina-5*dt);
