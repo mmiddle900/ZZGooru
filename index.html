@@ -48,14 +48,19 @@ function pass(cx,cy){
   const ox=cx-qx,oy=cy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
  }
- // 나무는 줄기만 충돌 대상으로 처리해 잎사귀 가장자리에는 걸리지 않게 한다.
- const combined=playerRadius+treeTrunkRadius,combined2=combined*combined;
- for(let ty=Math.floor(cy-combined);ty<=Math.floor(cy+combined);ty++){
-  for(let tx=Math.floor(cx-combined);tx<=Math.floor(cx+combined);tx++){
+ // Test the player circle against the visible trunk rectangle.
+ const r=playerRadius,r2=r*r;
+ const trunkW=7/32,trunkH=12/32;
+ const minTX=Math.floor(cx-r-13/32),maxTX=Math.floor(cx+r-13/32);
+ const minTY=Math.floor(cy-r-18/32),maxTY=Math.floor(cy+r-18/32);
+ for(let ty=minTY;ty<=maxTY;ty++){
+  for(let tx=minTX;tx<=maxTX;tx++){
    if(!treeAt(tx,ty))continue;
-   // 렌더링된 줄기 중심은 타일의 x=0.5, y=0.75 위치
-   const ox=cx-(tx+.5),oy=cy-(ty+.75);
-   if(ox*ox+oy*oy<combined2-1e-9)return false;
+   const left=tx+13/32,top=ty+18/32;
+   const qx=Math.max(left,Math.min(cx,left+trunkW));
+   const qy=Math.max(top,Math.min(cy,top+trunkH));
+   const ox=cx-qx,oy=cy-qy;
+   if(ox*ox+oy*oy<r2-1e-9)return false;
   }
  }
  return true;
