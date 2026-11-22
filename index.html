@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>이야기 게임</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#11131a;color:#f4f4f7;display:grid;place-items:center;padding:18px}
+main{width:min(900px,100%)}.frame{background:#1b1e29;border:1px solid #41465a;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #0008}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#252938;border-bottom:1px solid #41465a}
+header h1{font-size:17px;margin:0}button{font:inherit;color:inherit;background:#343b51;border:1px solid #59627c;border-radius:10px;padding:10px 16px;cursor:pointer}button:hover{background:#46516e}button:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
+.scene{min-height:300px;display:grid;place-items:center;background:linear-gradient(145deg,#252c40,#171a24);padding:32px;text-align:center}
+.scene h2{font-size:clamp(24px,5vw,42px);margin:0 0 12px}.scene p{color:#c8cde0;margin:0}
+.content{padding:22px;display:grid;gap:14px}.speaker{color:#a5b4fc;font-weight:700}.dialogue{font-size:18px;line-height:1.8;min-height:62px;white-space:pre-wrap}.choices{display:grid;gap:10px}.choices button{text-align:left}.controls{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.hint{font-size:12px;color:#9ba3ba}
+.hidden{display:none!important}
+@media(max-width:560px){body{padding:8px}.scene{min-height:220px;padding:20px}.content{padding:16px}.dialogue{font-size:16px}}
+</style>
+</head>
+<body>
+<main>
+<div class="frame">
+<header><h1>이야기 게임 · 기본판</h1><button id="saveBtn" class="hidden">저장하기</button></header>
+<section id="title" class="scene">
+<div><h2>새로운 이야기</h2><p>당신의 선택으로 이야기가 이어집니다.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap"><button id="newBtn">새 게임</button><button id="continueBtn">이어하기</button></div><p class="hint" style="margin-top:14px">진행 상황은 이 기기의 브라우저에 자동 저장됩니다.</p></div>
+</section>
+<section id="game" class="hidden">
+<div class="scene"><div><h2 id="sceneTitle">첫 번째 장</h2><p id="sceneSubtitle">조용한 아침</p></div></div>
+<div class="content"><div class="speaker" id="speaker"></div><div class="dialogue" id="dialogue"></div><div id="choices" class="choices"></div><div class="controls"><button id="backBtn">처음 화면</button><button id="nextBtn">다음 ▶</button></div><div class="hint" id="progress"></div></div>
+</section>
+</div>
+</main>
+<script>
+const SAVE_KEY="zzgooru_story_save_v1";
+const story=[
+ {chapter:"첫 번째 장",subtitle:"조용한 아침",speaker:"나레이션",text:"눈을 뜨자 낯선 방의 천장이 보였다.\n창밖에서는 새소리가 들려왔다.",next:1},
+ {chapter:"첫 번째 장",subtitle:"조용한 아침",speaker:"나",text:"…여기는 어디지?",next:2},
+ {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"방 밖에서 작은 소리가 났다. 문을 열어 볼까?",choices:[{text:"문을 연다",next:3},{text:"조금 더 기다린다",next:4}]},
+ {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"문을 열자 복도 끝에 작은 편지 한 장이 놓여 있었다.",next:5},
+ {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"잠시 기다렸지만 아무 일도 일어나지 않았다. 결국 문을 열었다.",next:5},
+ {chapter:"첫 번째 장",subtitle:"편지",speaker:"나레이션",text:"편지에는 짧은 문장이 적혀 있었다.\n\n'이야기는 이제부터 시작된다.'",next:6},
+ {chapter:"첫 번째 장",subtitle:"첫 번째 선택",speaker:"나",text:"이 편지를 누가 남긴 걸까?\n\n(기본 데모가 끝났습니다.)",choices:[{text:"처음부터 다시",next:0},{text:"타이틀 화면으로",title:true}]}
+];
+let index=0;
+const $=id=>document.getElementById(id);
+function showTitle(){ $("title").classList.remove("hidden");$("game").classList.add("hidden");$("saveBtn").classList.add("hidden"); }
+function start(i=0){index=i;$("title").classList.add("hidden");$("game").classList.remove("hidden");$("saveBtn").classList.remove("hidden");render();}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({index,updated:Date.now()}));}catch(e){alert("이 브라우저에서는 저장할 수 없습니다.");}}
+function load(){try{const data=JSON.parse(localStorage.getItem(SAVE_KEY));return data&&Number.isInteger(data.index)&&data.index>=0&&data.index<story.length?data:null;}catch(e){return null;}}
+function render(){
+ const s=story[index];$("sceneTitle").textContent=s.chapter;$("sceneSubtitle").textContent=s.subtitle;$("speaker").textContent=s.speaker;$("dialogue").textContent=s.text;$("progress").textContent="진행 "+(index+1)+" / "+story.length;
+ const box=$("choices");box.replaceChildren();
+ if(s.choices){$("nextBtn").classList.add("hidden");s.choices.forEach(choice=>{const b=document.createElement("button");b.textContent=choice.text;b.onclick=()=>{if(choice.title){save();showTitle();return;}index=choice.next;save();render();};box.appendChild(b);});}
+ else{$("nextBtn").classList.remove("hidden");}
+}
+$("newBtn").onclick=()=>{if(confirm("새 게임을 시작할까요? 저장된 진행 상황은 새 진행으로 바뀝니다.")){start(0);save();}};
+$("continueBtn").onclick=()=>{const data=load();if(data)start(data.index);else alert("저장된 진행 상황이 없습니다.");};
+$("nextBtn").onclick=()=>{const s=story[index];if(s.next!==undefined){index=s.next;save();render();}else showTitle();};
+$("saveBtn").onclick=()=>{save();alert("이 기기에 저장했습니다.");};
+$("backBtn").onclick=()=>showTitle();
+if(!load())$("continueBtn").disabled=true;
+</script>
+</body>
+</html>
