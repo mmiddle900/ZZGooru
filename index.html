@@ -29,7 +29,7 @@ if(y===2&&x>=3&&x<=7)return 1;if(x===3&&y>=3&&y<=5)return 1;
 if(x===13&&y>=2&&y<=4)return 1;
 return 0;}
 function objectAt(x,y){if(mapId===0){if(x===10&&y===5)return 'sword';if(x===9&&y===1)return 'door';if(x===15&&y===7)return 'npc';}else{if(x===10&&y===2)return 'letter';if(x===10&&y===1)return 'exit';}return null;}
-function interact(){if(dialogue){advance();return;}let tx=px,ty=py-1;let obj=objectAt(tx,ty)||objectAt(px+1,py)||objectAt(px-1,py)||objectAt(px,py+1);if(obj==='sword'){if(!hasSword){hasSword=true;startTalk('sword');}else startTalk('sword');}
+function interact(){if(dialogue){advance();return;}let tx=Math.round(px+facing.x),ty=Math.round(py+facing.y);let obj=objectAt(tx,ty)||objectAt(Math.round(px),Math.round(py)-1)||objectAt(Math.round(px)+1,Math.round(py))||objectAt(Math.round(px)-1,Math.round(py))||objectAt(Math.round(px),Math.round(py)+1);if(obj==='sword'){if(!hasSword){hasSword=true;startTalk('sword');}else startTalk('sword');}
 else if(obj==='door'){if(!hasSword)startTalk('door');else{mapId=1;px=10;py=10;startTalk('forest');}}
 else if(obj==='npc')startTalk('npc');else if(obj==='letter'){seenLetter=true;startTalk('letter');}else if(obj==='exit'){mapId=0;px=9;py=2;startTalk('forest');}else startTalk('door');}
 function canStand(x,y){const r=.24;return tileAt(Math.floor(x-r),Math.floor(y-r))!==1&&tileAt(Math.floor(x+r),Math.floor(y-r))!==1&&tileAt(Math.floor(x-r),Math.floor(y+r))!==1&&tileAt(Math.floor(x+r),Math.floor(y+r))!==1;}
@@ -37,7 +37,7 @@ function move(dx,dy){if(dialogue)return;let len=Math.hypot(dx,dy)||1;dx/=len;dy/
 function attack(){if(dialogue||!hasSword||attackCD>0)return;attackCD=.42;animTime=.18;if(mapId===1&&enemy.alive){const dx=enemy.x-px,dy=enemy.y-py,dist=Math.hypot(dx,dy),dot=(dx*facing.x+dy*facing.y)/(dist||1);if(dist<1.55&&dot>.15){enemy.hp=Math.max(0,enemy.hp-34);if(enemy.hp===0)enemy.alive=false;}}draw();}
 function tick(dt){if(dialogue)return;attackCD=Math.max(0,attackCD-dt);enemyHitCD=Math.max(0,enemyHitCD-dt);invuln=Math.max(0,invuln-dt);animTime=Math.max(0,animTime-dt);
 let dx=(keysDown.right?1:0)-(keysDown.left?1:0),dy=(keysDown.down?1:0)-(keysDown.up?1:0);if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};const nx=px+dx*moveSpeed*dt,ny=py+dy*moveSpeed*dt;if(canStand(nx,py))px=nx;if(canStand(px,ny))py=ny;}
-if(mapId===1&&enemy.alive){const ex=px-enemy.x,ey=py-enemy.y,d=Math.hypot(ex,ey);if(d>0.62){const vx=ex/d*1.35*dt,vy=ey/d*1.35*dt;if(canStand(enemy.x+vx,enemy.y))enemy.x+=vx;if(canStand(enemy.x,enemy.y+vy))enemy.y+=vy;}if(d<.72&&enemyHitCD<=0&&invuln<=0){playerHP=Math.max(0,playerHP-8);enemyHitCD=.8;invuln=.55;}}
+if(playerHP<=0){playerHP=100;px=10;py=10;mapId=1;enemy={x:10,y:6,hp:100,alive:true};saveGame();return;}if(mapId===1&&enemy.alive){const ex=px-enemy.x,ey=py-enemy.y,d=Math.hypot(ex,ey);if(d>0.62){const vx=ex/d*1.35*dt,vy=ey/d*1.35*dt;if(canStand(enemy.x+vx,enemy.y))enemy.x+=vx;if(canStand(enemy.x,enemy.y+vy))enemy.y+=vy;}if(d<.72&&enemyHitCD<=0&&invuln<=0){playerHP=Math.max(0,playerHP-8);enemyHitCD=.8;invuln=.55;}}
 saveGame();}
 function draw(){updateInventory();ctx.clearRect(0,0,c.width,c.height);
 for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){let wall=tileAt(x,y),xx=x*tile,yy=y*tile;
