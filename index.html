@@ -27,16 +27,18 @@ function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}))
 function load(){try{const d=JSON.parse(localStorage.getItem(saveKey)||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;}}catch(e){}}
 function interact(){
  if(dialogue){closeTalk();return;}
- const tx=Math.round(player.x+facing.x),ty=Math.round(player.y+facing.y);
- if(player.map===0&&tx===10&&ty===5&&!player.hasSword){player.hasSword=true;talk("레치타티보를 주웠다!");}
- else if(player.map===0&&((tx===9&&ty===1)||(Math.round(player.x)===9&&Math.round(player.y)<=2))){
-  if(!player.hasSword)talk("문이 잠겨 있다. 레치타티보를 찾아야 한다.");
-  else{player.map=1;player.x=10;player.y=10;enemy={x:10,y:6,hp:100,alive:true};talk("숲에 들어섰다. 붉은 슬라임이 다가온다!");}
+ const objects=[];
+ if(player.map===0){
+  if(!player.hasSword)objects.push({x:10,y:5,run:()=>{player.hasSword=true;talk("레치타티보를 주웠다!");}});
+  objects.push({x:9,y:1,run:()=>{if(!player.hasSword)talk("문이 잠겨 있다. 레치타티보를 찾아야 한다.");else{player.map=1;player.x=10;player.y=10;enemy={x:10,y:6,hp:100,alive:true};talk("숲에 들어섰다. 붉은 슬라임이 다가온다!");}}});
+  objects.push({x:15,y:7,run:()=>talk("낯선 사람: 마을 입구의 편지를 확인해 봐.")});
+ }else{
+  objects.push({x:10,y:2,run:()=>{player.letter=true;talk("편지: 레치타티보를 가진 자여, 북쪽 숲으로 향하라.");}});
+  objects.push({x:10,y:1,run:()=>{player.map=0;player.x=9;player.y=2;talk("방으로 돌아왔다.");}});
  }
- else if(player.map===1&&tx===10&&ty===2){player.letter=true;talk("편지: 레치타티보를 가진 자여, 북쪽 숲으로 향하라.");}
- else if(player.map===1&&tx===10&&ty===1){player.map=0;player.x=9;player.y=2;talk("방으로 돌아왔다.");}
- else if(player.map===0&&tx===15&&ty===7)talk("낯선 사람: 마을 입구의 편지를 확인해 봐.");
- else talk("주변을 살펴보았다.");
+ let best=null,bestD=1.65;
+ for(const o of objects){const d=Math.hypot(player.x-o.x,player.y-o.y);if(d<bestD){best=o;bestD=d;}}
+ if(best)best.run();else talk("대상 가까이 다가가서 조사해 봐.");
  save();render();
 }
 function attack(){
