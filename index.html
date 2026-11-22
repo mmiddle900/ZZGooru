@@ -235,12 +235,14 @@ document.addEventListener("keydown",e=>{
  unlockAudio();
  const d=dir(e);
  const action=e.code==="Space"||e.code==="Enter"||e.key===" ";
+ const shift=e.code==="ShiftLeft"||e.code==="ShiftRight";
  const attackKey=["KeyZ","KeyJ"].includes(e.code)||["z","j"].includes((e.key||"").toLowerCase());
- if(d||e.code==="ShiftLeft"||e.code==="ShiftRight"||action||attackKey)e.preventDefault();
- if(e.repeat)return;
- if(dialogue){if(action||e.code==="Enter")closeTalk();return;}
+ if(d||shift||action||attackKey)e.preventDefault();
+ // 이동/달리기 입력은 반복 keydown에서도 갱신해 입력 누락을 방지한다.
+ if(dialogue){if(action)closeTalk();return;}
  if(d)pressed[d]=true;
- if(e.code==="ShiftLeft"||e.code==="ShiftRight")pressed.run=true;
+ if(shift)pressed.run=true;
+ if(e.repeat)return;
  if(action)interact();
  if(attackKey)attack();
 });
