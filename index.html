@@ -126,7 +126,7 @@ function playFootstep(type,running){
  const now=audioCtx.currentTime;
  const src=audioCtx.createBufferSource();src.buffer=footNoise;
  const filter=audioCtx.createBiquadFilter();filter.type="lowpass";
- filter.frequency=type==="path"?(running?1500:1100):type==="forest"?900:1300;
+ filter.frequency.setValueAtTime(type==="path"?(running?1500:1100):type==="forest"?900:1300,now);
  const gain=audioCtx.createGain();
  gain.gain.setValueAtTime(type==="grass" ? 0.035 : type==="forest" ? 0.055 : 0.045,now);
  gain.gain.exponentialRampToValueAtTime(.001,now+.11);
