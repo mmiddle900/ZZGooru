@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v10";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v11";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -24,12 +24,16 @@ function pathAt(x,y){
  }
  return false;
 }
-function treeAt(x,y){
+function treeCandidate(x,y){
  const ix=Math.floor(x),iy=Math.floor(y),h=(ix*73856093^iy*19349663)>>>0;
  if(pathAt(ix,iy)||Math.hypot(ix-item.x,iy-item.y)<3||Math.hypot(ix-rose.x,iy-rose.y)<3||Math.hypot(ix-12,iy-35)<2.5)return false;
  if(ix>=64&&ix<=76&&iy>=27&&iy<=34)return false;
  return h%11<3;
 }
+// Create the forest once. Drawing and collision both use this same fixed set.
+const treeTiles=new Set();
+for(let ty=0;ty<rows;ty++)for(let tx=0;tx<cols;tx++)if(treeCandidate(tx,ty))treeTiles.add(tx+","+ty);
+function treeAt(x,y){return treeTiles.has(Math.floor(x)+","+Math.floor(y));}
 function tileBlocked(x,y){
  if(x<1||y<1||x>=cols-1||y>=rows-1)return true;
  if((x>=65&&x<=69&&y>=28&&y<=31)||(x>=70&&x<=73&&y>=29&&y<=32))return true;
@@ -48,20 +52,19 @@ function pass(cx,cy){
   const ox=cx-qx,oy=cy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
  }
- // Test the player circle against the visible trunk rectangle.
+ // Circle-vs-rectangle collision with the visible tree trunk.
  const r=playerRadius,r2=r*r;
- const trunkW=7/32,trunkH=12/32;
- const minTX=Math.floor(cx-r-13/32),maxTX=Math.floor(cx+r-13/32);
- const minTY=Math.floor(cy-r-18/32),maxTY=Math.floor(cy+r-18/32);
- for(let ty=minTY;ty<=maxTY;ty++){
-  for(let tx=minTX;tx<=maxTX;tx++){
-   if(!treeAt(tx,ty))continue;
-   const left=tx+13/32,top=ty+18/32;
-   const qx=Math.max(left,Math.min(cx,left+trunkW));
-   const qy=Math.max(top,Math.min(cy,top+trunkH));
-   const ox=cx-qx,oy=cy-qy;
-   if(ox*ox+oy*oy<r2-1e-9)return false;
-  }
+ const trunkLeft=10/32,trunkTop=17/32,trunkW=12/32,trunkH=14/32;
+ // Search a safely expanded neighborhood; do not miss nearby tree tiles.
+ const minTX=Math.floor(cx-r)-1,maxTX=Math.floor(cx+r)+1;
+ const minTY=Math.floor(cy-r)-1,maxTY=Math.floor(cy+r)+1;
+ for(let ty=minTY;ty<=maxTY;ty++)for(let tx=minTX;tx<=maxTX;tx++){
+  if(!treeAt(tx,ty))continue;
+  const left=tx+trunkLeft,top=ty+trunkTop;
+  const qx=Math.max(left,Math.min(cx,left+trunkW));
+  const qy=Math.max(top,Math.min(cy,top+trunkH));
+  const ox=cx-qx,oy=cy-qy;
+  if(ox*ox+oy*oy<r2-1e-9)return false;
  }
  return true;
 }
