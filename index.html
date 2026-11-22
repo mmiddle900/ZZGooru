@@ -11,7 +11,7 @@
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v10";
-let player={x:20,y:26,hp:100,hasSword:false,map:1,letter:false,rose:false};
+let player={x:12,y:35,hp:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
@@ -27,7 +27,7 @@ function pathAt(x,y){
 function treeAt(x,y){
  if(x<2||y<2||x>cols-3||y>rows-3)return true;
  const ix=Math.floor(x),iy=Math.floor(y),h=(ix*73856093^iy*19349663)>>>0;
- if(pathAt(ix,iy)||Math.hypot(ix-item.x,iy-item.y)<3||Math.hypot(ix-rose.x,iy-rose.y)<3||Math.hypot(ix-player.x,iy-player.y)<2.5)return false;
+ if(pathAt(ix,iy)||Math.hypot(ix-item.x,iy-item.y)<3||Math.hypot(ix-rose.x,iy-rose.y)<3||Math.hypot(ix-12,iy-35)<2.5)return false;
  if(ix>=64&&ix<=76&&iy>=27&&iy<=34)return false;
  return h%11<3;
 }
@@ -155,7 +155,7 @@ document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;}
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:20,y:26,hp:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
 load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
