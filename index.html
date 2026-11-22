@@ -11,7 +11,8 @@
 const c=document.getElementById('map'),ctx=c.getContext('2d'),tile=32,cols=20,rows=13;
 const saveKey='zzgooru_rpg_save_v1';
 let px=9,py=8,hasSword=false,seenLetter=false,dialogue=null,di=0,mapId=0;
-let facing={x:0,y:-1},keysDown={},lastFrame=0,animTime=0,playerHP=100,enemy={x:10,y:6,hp:100,alive:true},attackCD=0,enemyHitCD=0,invuln=0;\nconst moveSpeed=3.5;
+let facing={x:0,y:-1},keysDown={},lastFrame=0,animTime=0,playerHP=100,enemy={x:10,y:6,hp:100,alive:true},attackCD=0,enemyHitCD=0,invuln=0;
+const moveSpeed=3.5;
 const lines={
 intro:[['나레이션','김희범은 낯선 방에서 눈을 떴다.'],['김희범','…여기는 어디지?'],['나레이션','침대 옆에 낯익은 검이 놓여 있다.'],['김희범','내 검, 레치타티보!']],
 sword:[['김희범','레치타티보를 손에 쥐었다. 이제 움직일 수 있겠어.']],
