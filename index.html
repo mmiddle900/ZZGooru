@@ -254,10 +254,10 @@ function render(){
  ctx.fillStyle="#26384a";ctx.beginPath();ctx.arc(gx,gy,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#39bdf4";ctx.beginPath();ctx.arc(gx,gy,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",gx,gy-18);
  ctx.fillStyle="#4e9fb8";ctx.font="bold 15px sans-serif";ctx.fillText("야한 바다",67*tile-camX,25*tile-camY);
  for(const crab of crabs){if(!crab.alive)continue;const cx=crab.x*tile+tile/2-camX,cy=crab.y*tile+tile/2-camY;ctx.fillStyle="#a94b35";ctx.beginPath();ctx.ellipse(cx,cy,13,9,0,0,Math.PI*2);ctx.fill();ctx.fillRect(cx-19,cy-3,9,5);ctx.fillRect(cx+10,cy-3,9,5);ctx.fillRect(cx-10,cy-12,5,7);ctx.fillRect(cx+5,cy-12,5,7);ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-5,3,3);ctx.fillRect(cx+4,cy-5,3,3);ctx.fillStyle="#111";ctx.fillRect(cx-5,cy-4,1,1);ctx.fillRect(cx+5,cy-4,1,1);ctx.fillStyle="#111";ctx.fillRect(cx-14,cy-20,28,4);ctx.fillStyle="#e84a4a";ctx.fillRect(cx-14,cy-20,28*crab.hp/100,4);}
- // Weapon attack-range preview: 150-degree cone, 3 tiles in facing direction.
+ if(player.hasSword){\n // Weapon attack-range preview: 150-degree cone, 3 tiles in facing direction.
  const pcx=player.x*tile+tile/2-camX,pcy=player.y*tile+tile/2-camY;
  const ang=Math.atan2(facing.y,facing.x),rad=3*tile,half=75*Math.PI/180;
- ctx.save();ctx.beginPath();ctx.moveTo(pcx,pcy);ctx.arc(pcx,pcy,rad,ang-half,ang+half);ctx.closePath();ctx.fillStyle=attackViz>0?"rgba(255,205,65,.34)":"rgba(255,205,65,.13)";ctx.fill();ctx.strokeStyle="rgba(255,205,65,.65)";ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+ ctx.save();ctx.beginPath();ctx.moveTo(pcx,pcy);ctx.arc(pcx,pcy,rad,ang-half,ang+half);ctx.closePath();ctx.fillStyle=attackViz>0?"rgba(255,205,65,.34)":"rgba(255,205,65,.13)";ctx.fill();ctx.strokeStyle="rgba(255,205,65,.65)";ctx.lineWidth=1.5;ctx.stroke();ctx.restore();\n }
  const px=player.x*tile+tile/2-camX,py=player.y*tile+tile/2-camY;
  // 김희범: 일정한 22px 슬라임 크기, 카메라 줌과 무관
  ctx.fillStyle="#0003";ctx.beginPath();ctx.ellipse(px,py+9,11,4,0,0,Math.PI*2);ctx.fill();
