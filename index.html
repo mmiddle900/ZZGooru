@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13",legacySaveKey="zzgooru_rpg_save_v12";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -84,7 +84,7 @@ function advanceCutscene(){
 }
 function closeTalk(){if(cutsceneQueue){advanceCutscene();return;}dialogue=false;$("dialog").hidden=true;save();}
 function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem(saveKey)||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;}}catch(e){}}
+function load(){try{const raw=localStorage.getItem(saveKey)||localStorage.getItem(legacySaveKey)||localStorage.getItem("zzgooru_rpg_save_v11")||localStorage.getItem("zzgooru_rpg_save_v10");const d=JSON.parse(raw||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}}catch(e){}}
 function interact(){
  if(dialogue){closeTalk();return;}
  const dItem=Math.hypot(player.x-item.x,player.y-item.y),dRose=Math.hypot(player.x-rose.x,player.y-rose.y);
@@ -267,6 +267,6 @@ $("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){loca
 load();enemy.alive=false;pressed={};heldKeys.clear();
 // 저장 좌표가 나무/벽 충돌 안에 갇혀 있으면 가장 가까운 이동 가능한 좌표로 복구
 if(!pass(player.x,player.y)){let found=false;for(let radius=1;radius<=12&&!found;radius++){for(let oy=-radius;oy<=radius&&!found;oy++)for(let ox=-radius;ox<=radius&&!found;ox++){if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;const nx=player.x+ox,ny=player.y+oy;if(pass(nx,ny)){player.x=nx;player.y=ny;found=true;}}}}
-render();if(!localStorage.getItem(saveKey))playIntro();
+render();if(!localStorage.getItem(saveKey)&&!localStorage.getItem(legacySaveKey)&&!localStorage.getItem("zzgooru_rpg_save_v11")&&!localStorage.getItem("zzgooru_rpg_save_v10"))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
