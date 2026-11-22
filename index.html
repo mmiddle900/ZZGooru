@@ -36,7 +36,7 @@ function tileBlocked(x,y){
  return false;
 }
 // 플레이어는 원형, 나무는 그림 전체 타일이 아니라 보이는 줄기 중심에 충돌을 둔다.
-const playerRadius=.34,treeTrunkRadius=.16;
+const playerRadius=.34,treeTrunkRadius=.13;
 function pass(cx,cy){
  if(!Number.isFinite(cx)||!Number.isFinite(cy))return false;
  const r=playerRadius,minX=Math.floor(cx-r),maxX=Math.floor(cx+r);
@@ -53,7 +53,8 @@ function pass(cx,cy){
  for(let ty=Math.floor(cy-combined);ty<=Math.floor(cy+combined);ty++){
   for(let tx=Math.floor(cx-combined);tx<=Math.floor(cx+combined);tx++){
    if(!treeAt(tx,ty))continue;
-   const ox=cx-(tx+.5),oy=cy-(ty+.5);
+   // 렌더링된 줄기 중심은 타일의 x=0.5, y=0.75 위치
+   const ox=cx-(tx+.5),oy=cy-(ty+.75);
    if(ox*ox+oy*oy<combined2-1e-9)return false;
   }
  }
