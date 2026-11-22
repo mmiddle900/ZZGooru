@@ -25,7 +25,6 @@ function pathAt(x,y){
  return false;
 }
 function treeAt(x,y){
- if(x<2||y<2||x>cols-3||y>rows-3)return true;
  const ix=Math.floor(x),iy=Math.floor(y),h=(ix*73856093^iy*19349663)>>>0;
  if(pathAt(ix,iy)||Math.hypot(ix-item.x,iy-item.y)<3||Math.hypot(ix-rose.x,iy-rose.y)<3||Math.hypot(ix-12,iy-35)<2.5)return false;
  if(ix>=64&&ix<=76&&iy>=27&&iy<=34)return false;
@@ -33,22 +32,30 @@ function treeAt(x,y){
 }
 function tileBlocked(x,y){
  if(x<1||y<1||x>=cols-1||y>=rows-1)return true;
- if(treeAt(x,y))return true;
  if((x>=65&&x<=69&&y>=28&&y<=31)||(x>=70&&x<=73&&y>=29&&y<=32))return true;
  return false;
 }
-// 캐릭터 원형 충돌 판정: 모서리만 검사하지 않고 주변 타일 사각형과 원의 거리로 판정
-const playerRadius=.34;
+// 플레이어는 원형, 나무는 그림 전체 타일이 아니라 보이는 줄기 중심에 충돌을 둔다.
+const playerRadius=.34,treeTrunkRadius=.16;
 function pass(cx,cy){
  if(!Number.isFinite(cx)||!Number.isFinite(cy))return false;
- const r=playerRadius, minX=Math.floor(cx-r),maxX=Math.floor(cx+r);
+ const r=playerRadius,minX=Math.floor(cx-r),maxX=Math.floor(cx+r);
  const minY=Math.floor(cy-r),maxY=Math.floor(cy+r),r2=r*r;
+ // 지도 경계와 연못은 타일 단위로 막는다.
  for(let ty=minY;ty<=maxY;ty++)for(let tx=minX;tx<=maxX;tx++){
   if(!tileBlocked(tx,ty))continue;
-  // Circle-vs-tile: nearest point on the solid tile; prevents corner clipping.
   const qx=Math.max(tx,Math.min(cx,tx+1)),qy=Math.max(ty,Math.min(cy,ty+1));
   const ox=cx-qx,oy=cy-qy;
   if(ox*ox+oy*oy<r2-1e-9)return false;
+ }
+ // 나무는 줄기만 충돌 대상으로 처리해 잎사귀 가장자리에는 걸리지 않게 한다.
+ const combined=playerRadius+treeTrunkRadius,combined2=combined*combined;
+ for(let ty=Math.floor(cy-combined);ty<=Math.floor(cy+combined);ty++){
+  for(let tx=Math.floor(cx-combined);tx<=Math.floor(cx+combined);tx++){
+   if(!treeAt(tx,ty))continue;
+   const ox=cx-(tx+.5),oy=cy-(ty+.5);
+   if(ox*ox+oy*oy<combined2-1e-9)return false;
+  }
  }
  return true;
 }
