@@ -161,7 +161,46 @@ function update(dt){
   }
  }
 }
-function updateCrabs(dt){\n for(const c of crabs){if(!c.alive)continue;const dx=player.x-c.x,dy=player.y-c.y,d=Math.hypot(dx,dy)||1;if(d>20)continue;c.wait-=dt;if(c.wait<=0&&d<=4){c.wait=2;crabDash={x:c.x,y:c.y,tx:player.x,ty:player.y,remaining:Math.min(4,d),crab:c};}else if(!crabDash||crabDash.crab!==c){const step=Math.min(2*dt,d);c.x+=dx/d*step;c.y+=dy/d*step;}}\n if(crabDash){const q=crabDash,dx=q.tx-q.x,dy=q.ty-q.y,d=Math.hypot(dx,dy)||1,step=Math.min(2*dt,q.remaining,d);q.x+=dx/d*step;q.y+=dy/d*step;q.remaining-=step;q.crab.x=q.x;q.crab.y=q.y;if(Math.hypot(player.x-q.x,player.y-q.y)<.65){player.hp=Math.max(0,player.hp-5);crabDash=null;}else if(q.remaining<=0||d<=.1)crabDash=null;}\n if(!crabs.some(c=>c.alive)&&!player.genScene&&Math.hypot(player.x-generalK.x,player.y-generalK.y)<=20)startGeneralKScene();\n}\nfunction startGeneralKScene(){player.genScene=true;clearInput();cutsceneQueue=[[\"제너럴 K\",\"여깁니다 여기!\"],[\"나레이션\",\"화면이 어두워진다. 김희범과 제너럴 K는 임시 캠프의 통나무 옆으로 이동한다.\"],[\"제너럴 K\",\"뵙게 되어서 인사드립니다. 제너럴 K 입니다.\"],[\"김희범\",\"전 김희범 입니다. 그 혹시...\"],[\"나레이션\",\"(로즈 페르디난트를 눕힌다)\"],[\"나레이션\",\"(로즈 페르디난트가 누움)\"],[\"김희범\",\"치료가 가능하신지...\"],[\"제너럴 K\",\"...!\"],[\"나레이션\",\"화면이 어두워진다. 로즈 페르디난트의 부상은 모두 치료되었지만, 아직 깨어나지 않았다.\"],[\"제너럴 K\",\"이것도 인연인데 뭉쳐서 다닙시다.\"],[\"김희범\",\"좋습니다.\"],[\"나레이션\",\"로즈 페르디난트와 제너럴 K가 동료로 추가되었습니다.\"]];player.x=82;player.y=34;player.hp=100;player.rose=true;player.generalK=true;advanceCutscene();save();}\nfunction obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
+function updateCrabs(dt){
+ for(const crab of crabs){
+  if(!crab.alive)continue;
+  const dx=player.x-crab.x,dy=player.y-crab.y,d=Math.hypot(dx,dy)||1;
+  if(d>20)continue;
+  crab.wait-=dt;
+  if(crab.wait<=0&&d<=4){
+   crab.wait=2;
+   crabDash={x:crab.x,y:crab.y,tx:player.x,ty:player.y,remaining:Math.min(4,d),crab};
+  }else if(!crabDash||crabDash.crab!==crab){
+   const step=Math.min(2*dt,d);crab.x+=dx/d*step;crab.y+=dy/d*step;
+  }
+ }
+ if(crabDash){
+  const q=crabDash,dx=q.tx-q.x,dy=q.ty-q.y,d=Math.hypot(dx,dy)||1,step=Math.min(2*dt,q.remaining,d);
+  q.x+=dx/d*step;q.y+=dy/d*step;q.remaining-=step;q.crab.x=q.x;q.crab.y=q.y;
+  if(Math.hypot(player.x-q.x,player.y-q.y)<.65){player.hp=Math.max(0,player.hp-5);crabDash=null;}
+  else if(q.remaining<=0||d<=.1)crabDash=null;
+ }
+ if(!crabs.some(crab=>crab.alive)&&!player.genScene&&Math.hypot(player.x-generalK.x,player.y-generalK.y)<=20)startGeneralKScene();
+}
+function startGeneralKScene(){
+ player.genScene=true;clearInput();
+ cutsceneQueue=[
+  ["제너럴 K","여깁니다 여기!"],
+  ["나레이션","화면이 어두워진다. 김희범과 제너럴 K는 임시 캠프의 통나무 옆으로 이동한다."],
+  ["제너럴 K","뵙게 되어서 인사드립니다. 제너럴 K 입니다."],
+  ["김희범","전 김희범 입니다. 그 혹시..."],
+  ["나레이션","(로즈 페르디난트를 눕힌다)"],
+  ["나레이션","(로즈 페르디난트가 누움)"],
+  ["김희범","치료가 가능하신지..."],
+  ["제너럴 K","...!"],
+  ["나레이션","화면이 어두워진다. 로즈 페르디난트의 부상은 모두 치료되었지만, 아직 깨어나지 않았다."],
+  ["제너럴 K","이것도 인연인데 뭉쳐서 다닙시다."],
+  ["김희범","좋습니다."],
+  ["나레이션","로즈 페르디난트와 제너럴 K가 동료로 추가되었습니다."]
+ ];
+ player.x=82;player.y=34;player.hp=100;player.rose=true;player.generalK=true;advanceCutscene();save();
+}
+function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
  const worldW=cols*tile,worldH=rows*tile;
