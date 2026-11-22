@@ -12,7 +12,7 @@
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13",legacySaveKey="zzgooru_rpg_save_v12";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};
-let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null;
+let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null,campRoseDown=false,campRoseHealed=false;
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
  const pts=[[12,35],[18,29],[20,26],[16,18],[21,19],[23,22],[31,24],[39,29],[47,34],[56,34],[65,30],[75,30],[86,36]];
@@ -68,13 +68,25 @@ function playIntro(){
  advanceCutscene();
 }
 function advanceCutscene(){
- if(cutsceneQueue&&cutsceneQueue.length){const line=cutsceneQueue.shift();talk(line[1],line[0]);}
- else{cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;save();}
+ while(cutsceneQueue&&cutsceneQueue.length){
+  const line=cutsceneQueue.shift();
+  if(line&&line.action){
+   playSfx("scene");
+   if(line.action==="camp"){player.x=82;player.y=34;facing={x:1,y:0};campRoseDown=false;campRoseHealed=false;}
+   if(line.action==="layRose"){campRoseDown=true;playSfx("interact");}
+   if(line.action==="healRose"){campRoseHealed=true;player.hp=100;playSfx("heal");}
+   if(line.action==="join"){player.rose=true;player.generalK=true;campRoseDown=false;campRoseHealed=true;playSfx("pickup");}
+   render();continue;
+  }
+  playSfx("talk");talk(line[1],line[0]);return;
+ }
+ cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;save();render();
 }
 function closeTalk(){if(cutsceneQueue){advanceCutscene();return;}dialogue=false;$("dialog").hidden=true;save();}
 function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}catch(e){}}
 function load(){try{const raw=localStorage.getItem(saveKey)||localStorage.getItem(legacySaveKey)||localStorage.getItem("zzgooru_rpg_save_v11")||localStorage.getItem("zzgooru_rpg_save_v10");const d=JSON.parse(raw||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;if(Array.isArray(d.crabs))d.crabs.forEach((c,i)=>Object.assign(crabs[i]||{},c));localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}}catch(e){}}
 function interact(){
+ unlockAudio();playSfx("interact");
  if(dialogue){closeTalk();return;}
  const dItem=Math.hypot(player.x-item.x,player.y-item.y),dRose=Math.hypot(player.x-rose.x,player.y-rose.y);
  if(!player.hasSword&&dItem<2.2){
@@ -102,8 +114,8 @@ function interact(){
 }
 function attack(){
  if(dialogue||!player.hasSword||attackWait>0)return;
- attackWait=1;attackViz=.22;
- for(const crab of crabs){if(!crab.alive)continue;const dx=crab.x-player.x,dy=crab.y-player.y,d=Math.hypot(dx,dy)||1,dot=(dx*facing.x+dy*facing.y)/d;if(d<=3&&dot>=Math.cos(75*Math.PI/180)){crab.hp=Math.max(0,crab.hp-20);if(crab.hp===0)crab.alive=false;}}
+ unlockAudio();playSfx("attack");attackWait=1;attackViz=.22;
+ for(const crab of crabs){if(!crab.alive)continue;const dx=crab.x-player.x,dy=crab.y-player.y,d=Math.hypot(dx,dy)||1,dot=(dx*facing.x+dy*facing.y)/d;if(d<=1.5&&dot>=Math.cos(75*Math.PI/180)){crab.hp=Math.max(0,crab.hp-20);playSfx("hit");if(crab.hp===0){crab.alive=false;playSfx("defeat");}}}
  render();save();
 }
 
@@ -113,6 +125,13 @@ function unlockAudio(){
   if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();const n=Math.floor(audioCtx.sampleRate*.22);footNoise=audioCtx.createBuffer(1,n,audioCtx.sampleRate);const data=footNoise.getChannelData(0);for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*(.7*(1-i/n));}
   if(audioCtx.state==="suspended")audioCtx.resume();
  }catch(e){}
+}
+function playSfx(type){
+ if(!audioCtx)return;const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+ const cfg={attack:[260,.09,"square"],hit:[180,.07,"triangle"],defeat:[420,.16,"sine"],crab:[110,.18,"sawtooth"],damage:[75,.2,"square"],pickup:[620,.13,"sine"],talk:[520,.045,"sine"],heal:[740,.3,"sine"],scene:[90,.35,"sine"],interact:[340,.08,"triangle"]}[type]||[330,.08,"sine"];
+ osc.type=cfg[2];osc.frequency.setValueAtTime(cfg[0],now);if(type==="heal"||type==="pickup")osc.frequency.exponentialRampToValueAtTime(cfg[0]*1.6,now+cfg[1]);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.09,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+cfg[1]);
+ osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+cfg[1]+.02);
 }
 function groundType(x,y){
  if(pathAt(x,y))return "path";
@@ -166,47 +185,34 @@ function updateCrabs(dt){
  for(const crab of crabs){
   if(!crab.alive)continue;
   const dx=player.x-crab.x,dy=player.y-crab.y,d=Math.hypot(dx,dy)||1;
-  if(d>20)continue;
-  if(!crab.dash){
-   crab.wait=Math.max(0,crab.wait-dt);
-   if(d<=4&&crab.wait<=0){
-    crab.wait=2;crab.dash={x:crab.x,y:crab.y,tx:player.x,ty:player.y,left:Math.min(4,d)};
-   }else{
-    const step=Math.min(2*dt,d);crab.x+=dx/d*step;crab.y+=dy/d*step;
-   }
-  }
+  if(d>20){crab.dash=null;continue;}
   if(crab.dash){
-   const q=crab.dash,ddx=q.tx-q.x,ddy=q.ty-q.y,dist=Math.hypot(ddx,ddy)||1,step=Math.min(2*dt,q.left,dist);
-   const ox=q.x,oy=q.y;q.x+=ddx/dist*step;q.y+=ddy/dist*step;q.left-=step;crab.x=q.x;crab.y=q.y;
-   // Check collision along the whole dash segment so fast movement cannot skip the player.
-   const vx=q.x-ox,vy=q.y-oy,len2=vx*vx+vy*vy;
-   const t=len2?Math.max(0,Math.min(1,((player.x-ox)*vx+(player.y-oy)*vy)/len2)):0;
-   if(Math.hypot(player.x-(ox+vx*t),player.y-(oy+vy*t))<=.58){
-    player.hp=Math.max(0,player.hp-5);crab.dash=null;
-   }else if(q.left<=.001||dist<=.05)crab.dash=null;
+   const q=crab.dash,vx=q.tx-q.x,vy=q.ty-q.y,dist=Math.hypot(vx,vy)||1,step=Math.min(8*dt,q.left,dist),ox=q.x,oy=q.y;
+   q.x+=vx/dist*step;q.y+=vy/dist*step;q.left-=step;crab.x=q.x;crab.y=q.y;
+   const sx=q.x-ox,sy=q.y-oy,l2=sx*sx+sy*sy,t=l2?Math.max(0,Math.min(1,((player.x-ox)*sx+(player.y-oy)*sy)/l2)):0;
+   if(Math.hypot(player.x-(ox+sx*t),player.y-(oy+sy*t))<=.72){player.hp=Math.max(0,player.hp-5);playSfx("damage");crab.dash=null;crab.wait=2;}
+   else if(q.left<=.001||dist<=.05){crab.dash=null;crab.wait=2;}
+   continue;
   }
+  crab.wait=Math.max(0,crab.wait-dt);
+  if(d<=4&&crab.wait<=0){crab.wait=2;crab.dash={x:crab.x,y:crab.y,tx:player.x,ty:player.y,left:Math.min(4,d)};playSfx("crab");continue;}
+  const step=Math.min(2*dt,Math.max(0,d-.65));if(step>0){crab.x+=dx/d*step;crab.y+=dy/d*step;}
  }
  if(!crabs.some(crab=>crab.alive)&&!player.genScene&&Math.hypot(player.x-generalK.x,player.y-generalK.y)<=20)startGeneralKScene();
 }
 function startGeneralKScene(){
  if(player.genScene||crabs.some(crab=>crab.alive))return;
- player.genScene=true;clearInput();player.x=82;player.y=34;player.hp=100;player.rose=true;player.generalK=true;
+ player.genScene=true;clearInput();player.x=82;player.y=34;player.hp=100;player.generalK=true;
  cutsceneQueue=[
-  ["제너럴 K","여깁니다 여기!"],
-  ["나레이션","화면이 어두워진다. 김희범과 제너럴 K는 임시 캠프의 통나무 옆으로 이동한다."],
+  ["제너럴 K","여깁니다 여기!"],{action:"camp"},
   ["제너럴 K","뵙게 되어서 인사드립니다. 제너럴 K 입니다."],
-  ["김희범","전 김희범 입니다. 그 혹시..."],
-  ["나레이션","(로즈 페르디난트를 눕힌다)"],
-  ["나레이션","(로즈 페르디난트가 누움)"],
-  ["김희범","치료가 가능하신지..."],
-  ["제너럴 K","...!"],
-  ["나레이션","화면이 어두워진다. 로즈 페르디난트의 부상은 모두 치료되었지만, 아직 깨어나지 않았다."],
-  ["제너럴 K","이것도 인연인데 뭉쳐서 다닙시다."],
-  ["김희범","좋습니다."],
-  ["나레이션","로즈 페르디난트와 제너럴 K가 동료로 추가되었습니다."]
+  ["김희범","전 김희범 입니다. 그 혹시..."],{action:"layRose"},
+  ["김희범","치료가 가능하신지..."],["제너럴 K","...!"],
+  {action:"healRose"},["제너럴 K","이것도 인연인데 뭉쳐서 다닙시다."],
+  ["김희범","좋습니다."],{action:"join"}
  ];
  let fade=document.getElementById("sceneFade");if(!fade){fade=document.createElement("div");fade.id="sceneFade";fade.style.cssText="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9999;transition:opacity .35s";document.body.appendChild(fade);}
- fade.style.opacity="1";save();
+ fade.style.opacity="1";save();playSfx("scene");
  requestAnimationFrame(()=>{render();requestAnimationFrame(()=>{fade.style.opacity="0";advanceCutscene();});});
 }
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
@@ -257,7 +263,7 @@ function render(){
  if(player.hasSword){
  // Weapon attack-range preview: 150-degree cone, 3 tiles in facing direction.
  const pcx=player.x*tile+tile/2-camX,pcy=player.y*tile+tile/2-camY;
- const ang=Math.atan2(facing.y,facing.x),rad=3*tile,half=75*Math.PI/180;
+ const ang=Math.atan2(facing.y,facing.x),rad=1.5*tile,half=75*Math.PI/180;
  ctx.save();ctx.beginPath();ctx.moveTo(pcx,pcy);ctx.arc(pcx,pcy,rad,ang-half,ang+half);ctx.closePath();ctx.fillStyle=attackViz>0?"rgba(255,205,65,.34)":"rgba(255,205,65,.13)";ctx.fill();ctx.strokeStyle="rgba(255,205,65,.65)";ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
  }
  const px=player.x*tile+tile/2-camX,py=player.y*tile+tile/2-camY;
@@ -265,11 +271,16 @@ function render(){
  ctx.fillStyle="#0003";ctx.beginPath();ctx.ellipse(px,py+9,11,4,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.ellipse(px,py,11,12,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle="#123f37";ctx.fillRect(px-4,py-2,2,2);ctx.fillRect(px+4,py-2,2,2);
+ // Visible party sprites follow the player; action beats in the cutscene are not spoken by narration.
+ if(player.generalK||player.genScene){
+  const kx=px-25,ky=py+5;ctx.fillStyle="#26384a";ctx.beginPath();ctx.ellipse(kx,ky+5,11,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#496b8b";ctx.fillRect(kx-8,ky-9,16,17);ctx.fillStyle="#d9c7a6";ctx.beginPath();ctx.arc(kx,ky-14,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c6d4e4";ctx.fillRect(kx-8,ky-22,16,7);ctx.fillStyle="#253329";ctx.font="11px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",kx,ky-29);
+  if(player.rose||campRoseDown){const rx=px+26,ry=py+8;ctx.fillStyle="#3b4c70";ctx.beginPath();ctx.ellipse(rx,ry+5,13,7,-.2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#d7b3a5";ctx.beginPath();ctx.arc(rx+7,ry-2,6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#b34d59";ctx.beginPath();ctx.ellipse(rx-2,ry+1,5,8,.3,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="11px sans-serif";ctx.fillText("로즈 페르디난트",rx,ry-17);}
+ }
  if(player.hasSword){ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px+facing.x*9,py+facing.y*9);ctx.lineTo(px+facing.x*19,py+facing.y*19);ctx.stroke();}
  ctx.textAlign="left";
  $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("staminaText").textContent=Math.floor(player.stamina)+"/100";$("staminaBar").style.width=player.stamina+"%";
  $("enemyText").textContent=crabs.some(c=>c.alive)?"작은 꽃게 "+crabs.filter(c=>c.alive).length+"마리 남음":player.generalK?"동료: 로즈 페르디난트 · 제너럴 K":"제너럴 K에게 가자";
- const slot=$("slot1");slot.className="slot empty";slot.textContent="·";const weapon=$("weaponSlot");if(player.hasSword){weapon.innerHTML="⚔️<small>레치타티보</small>";$("weaponInfo").textContent="전방 150° · 3칸 · 피해 20 · 쿨타임 1초";}else{weapon.innerHTML="·<small>미장착</small>";$("weaponInfo").textContent="무기를 획득하면 여기에 장착됩니다.";}
+ const slot=$("slot1");slot.className="slot empty";slot.textContent="·";const weapon=$("weaponSlot");if(player.hasSword){weapon.innerHTML="⚔️<small>레치타티보</small>";$("weaponInfo").textContent="전방 150° · 1.5칸 · 피해 20 · 쿨타임 1초";}else{weapon.innerHTML="·<small>미장착</small>";$("weaponInfo").textContent="무기를 획득하면 여기에 장착됩니다.";}
  const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
  const slot3=$("slot3");if(player.generalK){slot3.className="slot";slot3.innerHTML='<span class="item-icon">🛡️</span><span class="item-name">제너럴 K</span>';}else{slot3.className="slot empty";slot3.textContent="·";}
 }
