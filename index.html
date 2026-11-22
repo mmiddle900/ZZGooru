@@ -1,64 +1,54 @@
 <!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>김희범과 레치타티보</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>김희범과 레치타티보</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#11131a;color:#f4f4f7;display:grid;place-items:center;padding:18px}
-main{width:min(900px,100%)}.frame{background:#1b1e29;border:1px solid #41465a;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #0008}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#252938;border-bottom:1px solid #41465a}
-header h1{font-size:17px;margin:0}button{font:inherit;color:inherit;background:#343b51;border:1px solid #59627c;border-radius:10px;padding:10px 16px;cursor:pointer}button:hover{background:#46516e}button:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
-.scene{min-height:300px;display:grid;place-items:center;background:linear-gradient(145deg,#252c40,#171a24);padding:32px;text-align:center}
-.scene h2{font-size:clamp(24px,5vw,42px);margin:0 0 12px}.scene p{color:#c8cde0;margin:0}
-.content{padding:22px;display:grid;gap:14px}.speaker{color:#a5b4fc;font-weight:700}.dialogue{font-size:18px;line-height:1.8;min-height:62px;white-space:pre-wrap}.choices{display:grid;gap:10px}.choices button{text-align:left}.controls{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.hint{font-size:12px;color:#9ba3ba}
-.hidden{display:none!important}
-@media(max-width:560px){body{padding:8px}.scene{min-height:220px;padding:20px}.content{padding:16px}.dialogue{font-size:16px}}
-</style>
-</head>
-<body>
-<main>
-<div class="frame">
-<header><h1>이야기 게임 · 기본판</h1><button id="saveBtn" class="hidden">저장하기</button></header>
-<section id="title" class="scene">
-<div><h2>김희범과 레치타티보</h2><p>검 레치타티보를 지닌 주인공 김희범의 이야기</p><div style="display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap"><button id="newBtn">새 게임</button><button id="continueBtn">이어하기</button></div><p class="hint" style="margin-top:14px">진행 상황은 이 기기의 브라우저에 자동 저장됩니다.</p></div>
-</section>
-<section id="game" class="hidden">
-<div class="scene"><div><h2 id="sceneTitle">첫 번째 장</h2><p id="sceneSubtitle">조용한 아침</p></div></div>
-<div class="content"><div class="speaker" id="speaker"></div><div class="dialogue" id="dialogue"></div><div id="choices" class="choices"></div><div class="controls"><button id="backBtn">처음 화면</button><button id="nextBtn">다음 ▶</button></div><div class="hint" id="progress"></div></div>
-</section>
-</div>
+*{box-sizing:border-box}body{margin:0;background:#10131b;color:#f5f6fa;font-family:system-ui,"Malgun Gothic",sans-serif;display:flex;justify-content:center;padding:12px}main{width:min(960px,100%)}header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px;background:#202635;border:1px solid #394357;border-radius:12px 12px 0 0}h1{font-size:18px;margin:0}button{background:#344057;color:white;border:1px solid #64718b;border-radius:9px;padding:10px 14px;font:inherit;touch-action:manipulation}button:active{background:#566782}#stage{position:relative;background:#111;overflow:hidden;border:1px solid #394357;border-top:0}canvas{display:block;width:100%;image-rendering:pixelated;touch-action:none}.hud{padding:10px;background:#202635;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.help{color:#aeb8ca;font-size:13px}.dialog{position:absolute;left:3%;right:3%;bottom:3%;background:#111827f2;border:3px solid #d8deea;border-radius:10px;padding:14px;box-shadow:0 4px 0 #0008}.speaker{color:#ffe28a;font-weight:800;margin-bottom:6px}.line{white-space:pre-wrap;line-height:1.6;min-height:48px}.dialog button{margin-top:10px;float:right}.mobile{display:none;justify-content:space-between;align-items:center;gap:12px;padding:12px;background:#202635}.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,40px);gap:4px}.pad button{padding:0;font-size:20px}.pad button:nth-child(1){grid-column:2}.pad button:nth-child(2){grid-column:1;grid-row:2}.pad button:nth-child(3){grid-column:2;grid-row:2}.pad button:nth-child(4){grid-column:3;grid-row:2}@media(max-width:650px){body{padding:0}.mobile{display:flex}header{border-radius:0}h1{font-size:15px}button{padding:9px 10px}.help{font-size:12px}}
+</style></head><body><main><header><h1>김희범과 레치타티보</h1><div><button id="save">저장</button> <button id="reset">처음부터</button></div></header>
+<div id="stage"><canvas id="map" width="640" height="416" aria-label="RPG 맵"></canvas><div id="dialog" class="dialog" hidden><div class="speaker" id="speaker"></div><div class="line" id="line"></div><button id="advance">확인 ▶</button></div></div>
+<div class="hud"><span id="status">김희범 · 레치타티보</span><span class="help">이동: 방향키 / WASD · 상호작용: Space 또는 Enter</span></div>
+<div class="mobile"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><button id="action">조사 / 대화</button></div>
 </main>
 <script>
-const SAVE_KEY="zzgooru_story_save_v1";
-const story=[
- {chapter:"첫 번째 장",subtitle:"조용한 아침",speaker:"나레이션",text:"눈을 뜨자 낯선 방의 천장이 보였다.\n침대 옆에는 김희범의 검, 레치타티보가 놓여 있었다.\n창밖에서는 새소리가 들려왔다.",next:1},
- {chapter:"첫 번째 장",subtitle:"조용한 아침",speaker:"김희범",text:"…여기는 어디지? 레치타티보는 여기 있군.",next:2},
- {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"방 밖에서 작은 소리가 났다. 문을 열어 볼까?",choices:[{text:"문을 연다",next:3},{text:"조금 더 기다린다",next:4}]},
- {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"문을 열자 복도 끝에 작은 편지 한 장이 놓여 있었다.",next:5},
- {chapter:"첫 번째 장",subtitle:"문 앞",speaker:"나레이션",text:"잠시 기다렸지만 아무 일도 일어나지 않았다. 결국 문을 열었다.",next:5},
- {chapter:"첫 번째 장",subtitle:"편지",speaker:"나레이션",text:"편지에는 짧은 문장이 적혀 있었다.\n\n'이야기는 이제부터 시작된다.'",next:6},
- {chapter:"첫 번째 장",subtitle:"첫 번째 선택",speaker:"나",text:"이 편지를 누가 남긴 걸까?\n\n(기본 데모가 끝났습니다.)",choices:[{text:"처음부터 다시",next:0},{text:"타이틀 화면으로",title:true}]}
-];
-let index=0;
-const $=id=>document.getElementById(id);
-function showTitle(){ $("title").classList.remove("hidden");$("game").classList.add("hidden");$("saveBtn").classList.add("hidden"); }
-function start(i=0){index=i;$("title").classList.add("hidden");$("game").classList.remove("hidden");$("saveBtn").classList.remove("hidden");render();}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({index,updated:Date.now()}));}catch(e){alert("이 브라우저에서는 저장할 수 없습니다.");}}
-function load(){try{const data=JSON.parse(localStorage.getItem(SAVE_KEY));return data&&Number.isInteger(data.index)&&data.index>=0&&data.index<story.length?data:null;}catch(e){return null;}}
-function render(){
- const s=story[index];$("sceneTitle").textContent=s.chapter;$("sceneSubtitle").textContent=s.subtitle;$("speaker").textContent=s.speaker;$("dialogue").textContent=s.text;$("progress").textContent="진행 "+(index+1)+" / "+story.length;
- const box=$("choices");box.replaceChildren();
- if(s.choices){$("nextBtn").classList.add("hidden");s.choices.forEach(choice=>{const b=document.createElement("button");b.textContent=choice.text;b.onclick=()=>{if(choice.title){save();showTitle();return;}index=choice.next;save();render();};box.appendChild(b);});}
- else{$("nextBtn").classList.remove("hidden");}
+const c=document.getElementById('map'),ctx=c.getContext('2d'),tile=32,cols=20,rows=13;
+const saveKey='zzgooru_rpg_save_v1';
+let px=9,py=8,hasSword=false,seenLetter=false,dialogue=null,di=0,mapId=0;
+const lines={
+intro:[['나레이션','김희범은 낯선 방에서 눈을 떴다.'],['김희범','…여기는 어디지?'],['나레이션','침대 옆에 낯익은 검이 놓여 있다.'],['김희범','내 검, 레치타티보!']],
+sword:[['김희범','레치타티보를 손에 쥐었다. 이제 움직일 수 있겠어.']],
+npc:[['낯선 사람','드디어 깨어났군, 김희범.'],['김희범','당신은 누구지?'],['낯선 사람','마을 입구에 편지가 있어. 네가 직접 확인해 봐.']],
+letter:[['나레이션','편지에는 이렇게 적혀 있었다.'],['편지','“레치타티보를 가진 자여, 북쪽 숲으로 향하라.”'],['김희범','북쪽 숲… 무슨 일이 벌어진 거지?']],
+door:[['나레이션','문이 잠겨 있다. 레치타티보를 찾고 나면 열릴 것 같다.']],
+forest:[['나레이션','김희범은 마을 밖으로 나왔다. 저 멀리 숲길이 이어진다.'],['김희범','편지에 적힌 북쪽 숲으로 가야 해.']]
+};
+function startTalk(key){dialogue=lines[key]||[['나레이션','아무 일도 일어나지 않았다.']];di=0;showLine();}
+function showLine(){if(!dialogue){document.getElementById('dialog').hidden=true;return;}document.getElementById('dialog').hidden=false;document.getElementById('speaker').textContent=dialogue[di][0];document.getElementById('line').textContent=dialogue[di][1];}
+function advance(){if(!dialogue)return;di++;if(di>=dialogue.length){dialogue=null;document.getElementById('dialog').hidden=true;saveGame();return;}showLine();}
+function tileAt(x,y){if(x<0||y<0||x>=cols||y>=rows)return 1;if(mapId===1){if(y===0||x===0||x===cols-1||y===rows-1)return 1;return (x===5&&y>2&&y<10)||(x===14&&y>1&&y<8)?1:0;}
+if(x===0||y===0||x===cols-1||y===rows-1)return 1;
+// furniture / walls inside bedroom
+if(y===2&&x>=3&&x<=7)return 1;if(x===3&&y>=3&&y<=5)return 1;
+if(x===13&&y>=2&&y<=4)return 1;
+return 0;}
+function objectAt(x,y){if(mapId===0){if(x===10&&y===5)return 'sword';if(x===9&&y===1)return 'door';if(x===15&&y===7)return 'npc';}else{if(x===10&&y===2)return 'letter';if(x===10&&y===1)return 'exit';}return null;}
+function interact(){if(dialogue){advance();return;}let tx=px,ty=py-1;let obj=objectAt(tx,ty)||objectAt(px+1,py)||objectAt(px-1,py)||objectAt(px,py+1);if(obj==='sword'){if(!hasSword){hasSword=true;startTalk('sword');}else startTalk('sword');}
+else if(obj==='door'){if(!hasSword)startTalk('door');else{mapId=1;px=10;py=10;startTalk('forest');}}
+else if(obj==='npc')startTalk('npc');else if(obj==='letter'){seenLetter=true;startTalk('letter');}else if(obj==='exit'){mapId=0;px=9;py=2;startTalk('forest');}else startTalk('door');}
+function move(dx,dy){if(dialogue)return;const nx=px+dx,ny=py+dy;if(tileAt(nx,ny)===1)return;if(objectAt(nx,ny)==='sword'&&!hasSword){}px=nx;py=ny;saveGame();draw();}
+function draw(){ctx.clearRect(0,0,c.width,c.height);
+for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){let wall=tileAt(x,y),xx=x*tile,yy=y*tile;
+ctx.fillStyle=mapId===0?(wall?'#6d5948':'#b99a70'):(wall?'#293d35':'#527b4d');ctx.fillRect(xx,yy,tile,tile);
+ctx.strokeStyle=mapId===0?'#9e815d':'#426742';ctx.strokeRect(xx,yy,tile,tile);
+if(mapId===0&&wall){ctx.fillStyle='#4a3a34';ctx.fillRect(xx+3,yy+3,26,26);}
 }
-$("newBtn").onclick=()=>{if(confirm("새 게임을 시작할까요? 저장된 진행 상황은 새 진행으로 바뀝니다.")){start(0);save();}};
-$("continueBtn").onclick=()=>{const data=load();if(data)start(data.index);else alert("저장된 진행 상황이 없습니다.");};
-$("nextBtn").onclick=()=>{const s=story[index];if(s.next!==undefined){index=s.next;save();render();}else showTitle();};
-$("saveBtn").onclick=()=>{save();alert("이 기기에 저장했습니다.");};
-$("backBtn").onclick=()=>showTitle();
-if(!load())$("continueBtn").disabled=true;
-</script>
-</body>
-</html>
+if(mapId===0){drawObject(10,5,'⚔','#f2d16b');drawObject(9,1,'🚪','#a87945');drawObject(15,7,'?','#c6d8ff');drawObject(5,4,'🛏','#d5d5e8');drawObject(13,3,'▤','#6d402f');}
+else{drawObject(10,2,seenLetter?'✓':'✉','#f4e6bd');drawObject(10,1,'⇧','#d7e6ff');}
+const x=px*tile,y=py*tile;ctx.fillStyle='#1b253d';ctx.fillRect(x+7,y+5,18,24);ctx.fillStyle='#f0c7a0';ctx.fillRect(x+9,y+1,14,13);ctx.fillStyle='#27324b';ctx.fillRect(x+8,y,16,6);ctx.fillStyle='#dbe7ff';ctx.fillRect(x+11,y+7,3,3);ctx.fillRect(x+18,y+7,3,3);
+if(hasSword){ctx.strokeStyle='#e7eaf2';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+25,y+16);ctx.lineTo(x+31,y+4);ctx.stroke();ctx.lineWidth=1;}
+ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.fillText('김희범',x-8,y-5);}
+function drawObject(x,y,s,color){let xx=x*tile,yy=y*tile;ctx.fillStyle='#0005';ctx.fillRect(xx+4,yy+5,24,24);ctx.fillStyle=color;ctx.font='24px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s,xx+16,yy+16);ctx.textAlign='start';ctx.textBaseline='alphabetic';}
+function saveGame(){try{localStorage.setItem(saveKey,JSON.stringify({px,py,hasSword,seenLetter,mapId}));}catch(e){}}
+function loadGame(){try{let s=JSON.parse(localStorage.getItem(saveKey));if(s){px=s.px??9;py=s.py??8;hasSword=!!s.hasSword;seenLetter=!!s.seenLetter;mapId=s.mapId??0;}}catch(e){}}
+document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(e.key))e.preventDefault();if(e.key===' '||e.key==='Enter'){interact();return;}if(e.key==='ArrowUp'||e.key.toLowerCase()==='w')move(0,-1);if(e.key==='ArrowDown'||e.key.toLowerCase()==='s')move(0,1);if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')move(-1,0);if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')move(1,0);});
+document.querySelectorAll('[data-dir]').forEach(b=>b.addEventListener('click',()=>{let d=b.dataset.dir;if(d==='up')move(0,-1);if(d==='down')move(0,1);if(d==='left')move(-1,0);if(d==='right')move(1,0);}));
+document.getElementById('action').onclick=interact;document.getElementById('advance').onclick=advance;document.getElementById('save').onclick=()=>{saveGame();document.getElementById('status').textContent='저장 완료 · 김희범 / 레치타티보';};document.getElementById('reset').onclick=()=>{if(confirm('처음부터 다시 시작할까요?')){px=9;py=8;hasSword=false;seenLetter=false;mapId=0;dialogue=null;localStorage.removeItem(saveKey);draw();startTalk('intro');}};
+loadGame();draw();if(!localStorage.getItem(saveKey))startTalk('intro');
+</script></body></html>
