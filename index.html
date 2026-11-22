@@ -261,7 +261,7 @@ function render(){
  }
  // Crab sprites and General K camp marker
  const gx=generalK.x*tile+tile/2-camX,gy=generalK.y*tile+tile/2-camY;
- ctx.fillStyle="#26384a";ctx.beginPath();ctx.arc(gx,gy,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#39bdf4";ctx.beginPath();ctx.arc(gx,gy,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",gx,gy-18);
+ if(!player.generalK){ctx.fillStyle="#26384a";ctx.beginPath();ctx.arc(gx,gy,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#39bdf4";ctx.beginPath();ctx.arc(gx,gy,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",gx,gy-18);}
  ctx.fillStyle="#4e9fb8";ctx.font="bold 15px sans-serif";ctx.fillText("야한 바다",67*tile-camX,25*tile-camY);
  for(const crab of crabs){if(!crab.alive)continue;const cx=crab.x*tile+tile/2-camX,cy=crab.y*tile+tile/2-camY;ctx.fillStyle="#a94b35";ctx.beginPath();ctx.ellipse(cx,cy,13,9,0,0,Math.PI*2);ctx.fill();ctx.fillRect(cx-19,cy-3,9,5);ctx.fillRect(cx+10,cy-3,9,5);ctx.fillRect(cx-10,cy-12,5,7);ctx.fillRect(cx+5,cy-12,5,7);ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-5,3,3);ctx.fillRect(cx+4,cy-5,3,3);ctx.fillStyle="#111";ctx.fillRect(cx-5,cy-4,1,1);ctx.fillRect(cx+5,cy-4,1,1);ctx.fillStyle="#111";ctx.fillRect(cx-14,cy-20,28,4);ctx.fillStyle="#e84a4a";ctx.fillRect(cx-14,cy-20,28*crab.hp/100,4);ctx.fillStyle="#111b";ctx.fillRect(cx-18,cy-32,36,10);ctx.fillStyle="#ffe28a";ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText(crab.dash?"돌진!":crab.wait.toFixed(1)+"초",cx,cy-24);}
  if(player.hasSword){
@@ -276,6 +276,7 @@ function render(){
  ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.ellipse(px,py,11,12,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle="#123f37";ctx.fillRect(px-4,py-2,2,2);ctx.fillRect(px+4,py-2,2,2);
  if(player.hasSword){ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px+facing.x*9,py+facing.y*9);ctx.lineTo(px+facing.x*19,py+facing.y*19);ctx.stroke();}
+ for(let i=damageNumbers.length-1;i>=0;i--){const n=damageNumbers[i];n.life-=1/60;n.y-=.018;if(n.life<=0){damageNumbers.splice(i,1);continue;}const nx=n.x*tile+tile/2-camX,ny=n.y*tile+tile/2-camY;ctx.save();ctx.globalAlpha=Math.min(1,n.life/.2);ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.lineWidth=3;ctx.strokeStyle="#171717";ctx.strokeText("-"+n.text,nx,ny-18);ctx.fillStyle=n.color;ctx.fillText("-"+n.text,nx,ny-18);ctx.restore();}
  ctx.textAlign="left";
  $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("staminaText").textContent=Math.floor(player.stamina)+"/100";$("staminaBar").style.width=player.stamina+"%";
  $("enemyText").textContent=crabs.some(c=>c.alive)?"작은 꽃게 "+crabs.filter(c=>c.alive).length+"마리 남음":player.generalK?"동료: 로즈 페르디난트 · 제너럴 K":"제너럴 K에게 가자";
