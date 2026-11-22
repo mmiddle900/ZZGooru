@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v7";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v8";
 let player={x:20,y:26,hp:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -78,7 +78,7 @@ function update(dt){
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle="#fdfdfb";ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#fdfdfb";ctx.fillRect(0,0,canvas.width,canvas.height);\n const px=mapX(player.x),py=mapY(player.y),worldScale=10;\n const camX=Math.max(0,Math.min(6400-canvas.width,px*worldScale-canvas.width/2));\n const camY=Math.max(0,Math.min(4160-canvas.height,py*worldScale-canvas.height/2));\n ctx.save();ctx.translate(-camX,-camY);ctx.scale(worldScale,worldScale);
  // Forest map illustration: map features are newly drawn, using the sketch only as a layout reference.
  ctx.lineJoin="round";ctx.lineCap="round";
  // winding forest perimeter
@@ -102,7 +102,7 @@ function render(){
  ctx.fillStyle="#263b27";ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.fillText("숲",276,198);
  if(!player.hasSword){const ix=mapX(item.x),iy=mapY(item.y);ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(ix,iy,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("레치타티보",ix,iy+25);}
  if(!player.rose){const rx=mapX(rose.x),ry=mapY(rose.y);ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(rx,ry,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("로즈 페르디난트",rx,ry+26);}
- const px=mapX(player.x),py=mapY(player.y);ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
  // Legend
  ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(20,380,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#168fbd";ctx.font="12px sans-serif";ctx.textAlign="left";ctx.fillText("캐릭터",38,384);
  ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(20,402,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.fillText("아이템",38,406);
