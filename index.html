@@ -10,9 +10,9 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v5";
-let player={x:50,y:50,hp:100,hasSword:false,map:1,letter:false};
-let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0;
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v6";
+let player={x:22,y:21,hp:100,hasSword:false,map:1,letter:false,rose:false};
+let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
 function tileBlocked(x,y){return x<0||y<0||x>=cols||y>=rows;}
 function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
@@ -35,10 +35,19 @@ function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}))
 function load(){try{const d=JSON.parse(localStorage.getItem(saveKey)||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;}}catch(e){}}
 function interact(){
  if(dialogue){closeTalk();return;}
- // 현재 맵에는 상호작용 오브젝트가 배치되지 않았다.
+ const dItem=Math.hypot(player.x-item.x,player.y-item.y),dRose=Math.hypot(player.x-rose.x,player.y-rose.y);
+ if(!player.hasSword&&dItem<2.2){
+  player.hasSword=true;
+  cutsceneQueue=[["김희범","오 이건 헨리랑 원나잇 대가로 얻은 레치타티보? ㅅㅅ"],["나레이션","레치타티보를 주웠습니다."]];
+  advanceCutscene();$("status").textContent="(레치타티보를 획득하였습니다.)";return;
+ }
+ if(!player.rose&&dRose<2.2){
+  player.rose=true;
+  cutsceneQueue=[["로즈 페르디난트","(피를 흘리고 쓰러져있다)"],["김희범","오 이런 미친"],["나레이션","(로즈 페르디난트를 동료로 얻었다)"]];
+  advanceCutscene();$("status").textContent="(로즈 페르디난트 동료 추가)";return;
+ }
  save();render();
 }
-
 function attack(){
  if(dialogue||!player.hasSword||attackWait>0)return;
  attackWait=.35;
@@ -57,26 +66,20 @@ function update(dt){
 }
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
- const camX=Math.max(0,Math.min(cols*tile-canvas.width,player.x*tile+tile/2-canvas.width/2));
- const camY=Math.max(0,Math.min(rows*tile-canvas.height,player.y*tile+tile/2-canvas.height/2));
- const startX=Math.floor(camX/tile),startY=Math.floor(camY/tile);
- const endX=Math.min(cols,Math.ceil((camX+canvas.width)/tile)+1),endY=Math.min(rows,Math.ceil((camY+canvas.height)/tile)+1);
- for(let wy=startY;wy<endY;wy++)for(let wx=startX;wx<endX;wx++){
-  const sx=wx*tile-camX,sy=wy*tile-camY,edge=tileBlocked(wx,wy);
-  const patch=((wx*17+wy*31+(wx*wy)%13)%19);
-  ctx.fillStyle=player.map===0?(edge?"#6b5847":(patch<4?"#b49a74":"#b99a70")):(edge?"#293d35":(patch<4?"#5a8552":"#527b4d"));
-  ctx.fillRect(sx,sy,tile,tile);
-  ctx.strokeStyle=player.map===0?"#9e815d":"#426742";ctx.strokeRect(sx,sy,tile,tile);
- }
- const x=player.x*tile-camX,y=player.y*tile-camY,b=dialogue?0:Math.sin(performance.now()/130)*1.4;
- ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(x+16,y+26,13,4,0,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.moveTo(x+3,y+25+b);ctx.quadraticCurveTo(x+2,y+10+b,x+10,y+8+b);ctx.quadraticCurveTo(x+16,y-2+b,x+22,y+8+b);ctx.quadraticCurveTo(x+31,y+12+b,x+29,y+25+b);ctx.quadraticCurveTo(x+16,y+32+b,x+3,y+25+b);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
- ctx.fillStyle="#123f37";ctx.fillRect(x+12,y+14+b,2,2);ctx.fillRect(x+22,y+14+b,2,2);
- ctx.fillStyle="#fff";ctx.font="bold 13px system-ui";ctx.textAlign="center";ctx.fillText("김희범",x+16,y-5);ctx.textAlign="left";
- if(player.hasSword){ctx.save();ctx.translate(x+16,y+17+b);ctx.rotate(Math.atan2(facing.y,facing.x));ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(23,0);ctx.stroke();ctx.restore();}
- $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("enemyText").textContent="주변을 조사하자";
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.strokeStyle="#171717";ctx.lineWidth=2.4;ctx.lineCap="round";ctx.lineJoin="round";
+ ctx.beginPath();ctx.moveTo(28,143);ctx.quadraticCurveTo(18,111,36,83);ctx.lineTo(66,52);ctx.quadraticCurveTo(83,34,92,48);ctx.lineTo(111,72);ctx.quadraticCurveTo(112,96,139,105);ctx.quadraticCurveTo(156,115,168,104);ctx.quadraticCurveTo(184,95,197,111);ctx.lineTo(215,139);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(42,165);ctx.lineTo(96,132);ctx.quadraticCurveTo(115,119,132,120);ctx.quadraticCurveTo(151,116,169,133);ctx.lineTo(188,145);ctx.lineTo(194,136);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(72,188);ctx.lineTo(116,153);ctx.lineTo(153,128);ctx.lineTo(184,150);ctx.lineTo(205,161);ctx.lineTo(211,151);ctx.stroke();
+ ctx.fillStyle="#111";ctx.font="16px sans-serif";ctx.textAlign="center";ctx.fillText("숲",72,109);
+ if(!player.hasSword){ctx.fillStyle="#888";ctx.beginPath();ctx.arc(118,118,6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="11px sans-serif";ctx.textAlign="left";ctx.fillText("레치타티보",12,192);}
+ if(!player.rose){ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(153,137,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="11px sans-serif";ctx.textAlign="left";ctx.fillText("로즈 페르디난트",66,226);}
+ const px=player.x*5+30,py=player.y*5+15;ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(Math.max(15,Math.min(620,px)),Math.max(15,Math.min(400,py)),7,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(20,337,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#00a6e8";ctx.font="11px sans-serif";ctx.textAlign="left";ctx.fillText("캐릭터",38,341);
+ ctx.fillStyle="#888";ctx.beginPath();ctx.arc(20,360,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.fillText("아이템",38,364);
+ $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("enemyText").textContent=player.rose?"동료: 로즈 페르디난트":"주변을 조사하자";
  const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
+ const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
 }
 function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
 document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
@@ -84,7 +87,7 @@ document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;}
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:50,y:50,hp:100,hasSword:false,map:1,letter:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:22,y:21,hp:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
 load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
