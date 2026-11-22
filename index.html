@@ -12,7 +12,7 @@
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13",legacySaveKey="zzgooru_rpg_save_v12";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};
-let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null,campRoseDown=false,campRoseHealed=false,pendingSceneAction=null;
+let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0,attackViz=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null,campRoseDown=false,campRoseHealed=false;\nconst damageNumbers=[];\nfunction showDamage(x,y,amount,color="#fff"){damageNumbers.push({x,y,text:String(amount),color,life:.85,max:.85});}
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
  const pts=[[12,35],[18,29],[20,26],[16,18],[21,19],[23,22],[31,24],[39,29],[47,34],[56,34],[65,30],[75,30],[86,36]];
@@ -67,27 +67,24 @@ function playIntro(){
  ];
  advanceCutscene();
 }
+function performSceneAction(action){
+ playSfx("scene");
+ if(action==="camp"){player.x=82;player.y=34;facing={x:1,y:0};campRoseDown=false;campRoseHealed=false;}
+ if(action==="layRose"){campRoseDown=true;playSfx("interact");}
+ if(action==="healRose"){campRoseHealed=true;player.hp=100;playSfx("heal");}
+ if(action==="join"){player.rose=true;player.generalK=true;campRoseDown=false;campRoseHealed=true;playSfx("pickup");}
+}
 function advanceCutscene(){
  while(cutsceneQueue&&cutsceneQueue.length){
   const line=cutsceneQueue.shift();
-  if(line&&line.action){
-   const narration={camp:"블랙아웃 된 후 제너럴 K와 김희범이 임시 캠프 통나무로 이동한다",layRose:"( 로즈 페르디난트를 눕힌다 )",healRose:"블랙아웃 된 후 로즈 페르디난트의 부상이 모두 치료된 채로 있다. 하지만 깨어나진 않음",join:"로즈 페르디난트와 제너럴 K가 동료로 추가되었습니다."};
-   talk(narration[line.action]||"", "나레이션");pendingSceneAction=line.action;return;
-  }
+  if(line&&line.action){performSceneAction(line.action);render();continue;}
   playSfx("talk");talk(line[1],line[0]);return;
  }
  cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;save();render();
 }
 function closeTalk(){
- if(pendingSceneAction){
-  const action=pendingSceneAction;pendingSceneAction=null;playSfx("scene");
-  if(action==="camp"){player.x=82;player.y=34;facing={x:1,y:0};campRoseDown=false;campRoseHealed=false;}
-  if(action==="layRose"){campRoseDown=true;playSfx("interact");}
-  if(action==="healRose"){campRoseHealed=true;player.hp=100;playSfx("heal");}
-  if(action==="join"){player.rose=true;player.generalK=true;campRoseDown=false;campRoseHealed=true;playSfx("pickup");}
-  dialogue=false;$("dialog").hidden=true;render();advanceCutscene();return;
- }
- if(cutsceneQueue){advanceCutscene();return;}dialogue=false;$("dialog").hidden=true;save();
+ if(cutsceneQueue){advanceCutscene();return;}
+ dialogue=false;$("dialog").hidden=true;save();
 }
 function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}catch(e){}}
 function load(){try{const raw=localStorage.getItem(saveKey)||localStorage.getItem(legacySaveKey)||localStorage.getItem("zzgooru_rpg_save_v11")||localStorage.getItem("zzgooru_rpg_save_v10");const d=JSON.parse(raw||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;if(Array.isArray(d.crabs))d.crabs.forEach((c,i)=>Object.assign(crabs[i]||{},c));localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}}catch(e){}}
@@ -121,7 +118,7 @@ function interact(){
 function attack(){
  if(dialogue||!player.hasSword||attackWait>0)return;
  unlockAudio();playSfx("attack");attackWait=1;attackViz=.22;
- for(const crab of crabs){if(!crab.alive)continue;const dx=crab.x-player.x,dy=crab.y-player.y,d=Math.hypot(dx,dy)||1,dot=(dx*facing.x+dy*facing.y)/d;if(d<=1.5&&dot>=Math.cos(75*Math.PI/180)){crab.hp=Math.max(0,crab.hp-20);playSfx("hit");if(crab.hp===0){crab.alive=false;playSfx("defeat");}}}
+ for(const crab of crabs){if(!crab.alive)continue;const dx=crab.x-player.x,dy=crab.y-player.y,d=Math.hypot(dx,dy)||1,dot=(dx*facing.x+dy*facing.y)/d;if(d<=1.5&&dot>=Math.cos(75*Math.PI/180)){crab.hp=Math.max(0,crab.hp-20);showDamage(crab.x,crab.y,20,"#ffe27a");playSfx("hit");if(crab.hp===0){crab.alive=false;playSfx("defeat");}}}
  render();save();
 }
 
@@ -197,7 +194,7 @@ function updateCrabs(dt){
    const q=crab.dash,vx=q.tx-q.x,vy=q.ty-q.y,dist=Math.hypot(vx,vy)||1,step=Math.min(8*dt,q.left,dist),ox=q.x,oy=q.y;
    const nx=q.x+vx/dist*step,ny=q.y+vy/dist*step;if(crabSpotFree(nx,ny,crab)){q.x=nx;q.y=ny;q.left-=step;crab.x=q.x;crab.y=q.y;}else{q.left=0;}
    const sx=q.x-ox,sy=q.y-oy,l2=sx*sx+sy*sy,t=l2?Math.max(0,Math.min(1,((player.x-ox)*sx+(player.y-oy)*sy)/l2)):0;
-   if(Math.hypot(player.x-(ox+sx*t),player.y-(oy+sy*t))<=.72){player.hp=Math.max(0,player.hp-5);playSfx("damage");crab.dash=null;crab.wait=2;}
+   if(Math.hypot(player.x-(ox+sx*t),player.y-(oy+sy*t))<=.72){player.hp=Math.max(0,player.hp-5);showDamage(player.x,player.y,5,"#ff7373");playSfx("damage");crab.dash=null;crab.wait=2;}
    else if(q.left<=.001||dist<=.05){crab.dash=null;crab.wait=2;}
    continue;
   }
