@@ -36,7 +36,7 @@ function interact(){
   objects.push({x:10,y:2,run:()=>{player.letter=true;talk("편지: 레치타티보를 가진 자여, 북쪽 숲으로 향하라.");}});
   objects.push({x:10,y:1,run:()=>{player.map=0;player.x=9;player.y=2;talk("방으로 돌아왔다.");}});
  }
- let best=null,bestD=1.65;
+ let best=null,bestD=1.05;
  for(const o of objects){const d=Math.hypot(player.x-o.x,player.y-o.y);if(d<bestD){best=o;bestD=d;}}
  if(best)best.run();
  save();render();
