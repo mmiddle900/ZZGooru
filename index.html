@@ -10,11 +10,11 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v4";
-let player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v5";
+let player={x:50,y:50,hp:100,hasSword:false,map:1,letter:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0;
 const $=id=>document.getElementById(id);
-function tileBlocked(x,y){return x<0||y<0||x>=cols||y>=rows||x===0||y===0||x===cols-1||y===rows-1;}
+function tileBlocked(x,y){return x<0||y<0||x>=cols||y>=rows;}
 function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
 function talk(s,speaker="나레이션"){pressed={};dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
 function playIntro(){
@@ -58,14 +58,22 @@ function update(dt){
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
- for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
-  const wall=tileBlocked(x,y);ctx.fillStyle=player.map===0?(wall?"#6b5847":"#b99a70"):(wall?"#293d35":"#527b4d");ctx.fillRect(x*tile,y*tile,tile,tile);ctx.strokeStyle=player.map===0?"#9e815d":"#426742";ctx.strokeRect(x*tile,y*tile,tile,tile);
+ const camX=Math.max(0,Math.min(cols*tile-canvas.width,player.x*tile+tile/2-canvas.width/2));
+ const camY=Math.max(0,Math.min(rows*tile-canvas.height,player.y*tile+tile/2-canvas.height/2));
+ const startX=Math.floor(camX/tile),startY=Math.floor(camY/tile);
+ const endX=Math.min(cols,Math.ceil((camX+canvas.width)/tile)+1),endY=Math.min(rows,Math.ceil((camY+canvas.height)/tile)+1);
+ for(let wy=startY;wy<endY;wy++)for(let wx=startX;wx<endX;wx++){
+  const sx=wx*tile-camX,sy=wy*tile-camY,edge=tileBlocked(wx,wy);
+  const patch=((wx*17+wy*31+(wx*wy)%13)%19);
+  ctx.fillStyle=player.map===0?(edge?"#6b5847":(patch<4?"#b49a74":"#b99a70")):(edge?"#293d35":(patch<4?"#5a8552":"#527b4d"));
+  ctx.fillRect(sx,sy,tile,tile);
+  ctx.strokeStyle=player.map===0?"#9e815d":"#426742";ctx.strokeRect(sx,sy,tile,tile);
  }
- const x=player.x*tile,y=player.y*tile,b=dialogue?0:Math.sin(performance.now()/130)*1.4;
+ const x=player.x*tile-camX,y=player.y*tile-camY,b=dialogue?0:Math.sin(performance.now()/130)*1.4;
  ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(x+16,y+26,13,4,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.moveTo(x+3,y+25+b);ctx.quadraticCurveTo(x+2,y+10+b,x+10,y+8+b);ctx.quadraticCurveTo(x+16,y-2+b,x+22,y+8+b);ctx.quadraticCurveTo(x+31,y+12+b,x+29,y+25+b);ctx.quadraticCurveTo(x+16,y+32+b,x+3,y+25+b);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle="#123f37";ctx.fillRect(x+12,y+14+b,2,2);ctx.fillRect(x+22,y+14+b,2,2);
- ctx.fillStyle="#fff";ctx.font="bold 13px system-ui";ctx.fillText("김희범",x-8,y-5);
+ ctx.fillStyle="#fff";ctx.font="bold 13px system-ui";ctx.textAlign="center";ctx.fillText("김희범",x+16,y-5);ctx.textAlign="left";
  if(player.hasSword){ctx.save();ctx.translate(x+16,y+17+b);ctx.rotate(Math.atan2(facing.y,facing.x));ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(23,0);ctx.stroke();ctx.restore();}
  $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("enemyText").textContent="주변을 조사하자";
  const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
@@ -76,7 +84,7 @@ document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;}
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:50,y:50,hp:100,hasSword:false,map:1,letter:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
 load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
