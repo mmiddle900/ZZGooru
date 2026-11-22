@@ -10,13 +10,13 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v3";
+const tile=32,cols=20,rows=13,saveKey="zzgooru_rpg_save_v4";
 let player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};
-let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:true},attackWait=0,enemyWait=0;
+let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0;
 const $=id=>document.getElementById(id);
 function tileBlocked(x,y){return x<0||y<0||x>=cols||y>=rows||x===0||y===0||x===cols-1||y===rows-1;}
 function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
-function talk(s,speaker="나레이션"){dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
+function talk(s,speaker="나레이션"){pressed={};dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
 function playIntro(){
  cutsceneQueue=[
   ["김희범","아 씨발... 여기가 어디야"],
@@ -49,15 +49,11 @@ function attack(){
  render();
 }
 function update(dt){
+ if(dialogue)return;
  attackWait=Math.max(0,attackWait-dt);enemyWait=Math.max(0,enemyWait-dt);
  let dx=(pressed.right?1:0)-(pressed.left?1:0),dy=(pressed.down?1:0)-(pressed.up?1:0);
  if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};const speed=3.2,nx=player.x+dx*speed*dt,ny=player.y+dy*speed*dt;if(pass(nx,player.y))player.x=nx;if(pass(player.x,ny))player.y=ny;}
- if(player.map===1&&enemy.alive){
-  const dx=player.x-enemy.x,dy=player.y-enemy.y,d=Math.hypot(dx,dy)||1;
-  if(d>.65){const vx=dx/d*1.2*dt,vy=dy/d*1.2*dt;if(pass(enemy.x+vx,enemy.y))enemy.x+=vx;if(pass(enemy.x,enemy.y+vy))enemy.y+=vy;}
-  if(d<.75&&enemyWait<=0){player.hp=Math.max(0,player.hp-10);enemyWait=.8;}
- }
- if(player.hp<=0){player.hp=100;player.x=10;player.y=10;enemy={x:10,y:6,hp:100,alive:true};talk("쓰러졌다! 숲 입구에서 다시 일어났다.");}
+
 }
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
@@ -65,7 +61,7 @@ function render(){
  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
   const wall=tileBlocked(x,y);ctx.fillStyle=player.map===0?(wall?"#6b5847":"#b99a70"):(wall?"#293d35":"#527b4d");ctx.fillRect(x*tile,y*tile,tile,tile);ctx.strokeStyle=player.map===0?"#9e815d":"#426742";ctx.strokeRect(x*tile,y*tile,tile,tile);
  }
- const x=player.x*tile,y=player.y*tile,b=Math.sin(performance.now()/130)*1.4;
+ const x=player.x*tile,y=player.y*tile,b=dialogue?0:Math.sin(performance.now()/130)*1.4;
  ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(x+16,y+26,13,4,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.moveTo(x+3,y+25+b);ctx.quadraticCurveTo(x+2,y+10+b,x+10,y+8+b);ctx.quadraticCurveTo(x+16,y-2+b,x+22,y+8+b);ctx.quadraticCurveTo(x+31,y+12+b,x+29,y+25+b);ctx.quadraticCurveTo(x+16,y+32+b,x+3,y+25+b);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle="#123f37";ctx.fillRect(x+12,y+14+b,2,2);ctx.fillRect(x+22,y+14+b,2,2);
@@ -75,12 +71,12 @@ function render(){
  const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
 }
 function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
-document.addEventListener("keydown",e=>{const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
+document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
 document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;});
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
 $("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:10,y:10,hp:100,hasSword:false,map:1,letter:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
-load();render();if(!localStorage.getItem(saveKey))playIntro();
+load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
