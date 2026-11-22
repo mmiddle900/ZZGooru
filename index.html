@@ -11,8 +11,8 @@
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13",legacySaveKey="zzgooru_rpg_save_v12";
-let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
-let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
+let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};
+let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22},generalK={x:86,y:36};const crabs=[{x:67,y:29,hp:100,alive:true,wait:1.1},{x:70,y:31,hp:100,alive:true,wait:1.6},{x:73,y:28,hp:100,alive:true,wait:2.1},{x:75,y:34,hp:100,alive:true,wait:1.4},{x:69,y:36,hp:100,alive:true,wait:2.4}];let crabDash=null;
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
  const pts=[[12,35],[18,29],[20,26],[16,18],[21,19],[23,22],[31,24],[39,29],[47,34],[56,34],[65,30],[75,30],[86,36]];
@@ -72,8 +72,8 @@ function advanceCutscene(){
  else{cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;save();}
 }
 function closeTalk(){if(cutsceneQueue){advanceCutscene();return;}dialogue=false;$("dialog").hidden=true;save();}
-function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}catch(e){}}
-function load(){try{const raw=localStorage.getItem(saveKey)||localStorage.getItem(legacySaveKey)||localStorage.getItem("zzgooru_rpg_save_v11")||localStorage.getItem("zzgooru_rpg_save_v10");const d=JSON.parse(raw||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;localStorage.setItem(saveKey,JSON.stringify({player,enemy}));}}catch(e){}}
+function save(){try{localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}catch(e){}}
+function load(){try{const raw=localStorage.getItem(saveKey)||localStorage.getItem(legacySaveKey)||localStorage.getItem("zzgooru_rpg_save_v11")||localStorage.getItem("zzgooru_rpg_save_v10");const d=JSON.parse(raw||"null");if(d&&d.player){player=Object.assign(player,d.player);if(d.enemy)enemy=d.enemy;if(Array.isArray(d.crabs))d.crabs.forEach((c,i)=>Object.assign(crabs[i]||{},c));localStorage.setItem(saveKey,JSON.stringify({player,enemy,crabs}));}}catch(e){}}
 function interact(){
  if(dialogue){closeTalk();return;}
  const dItem=Math.hypot(player.x-item.x,player.y-item.y),dRose=Math.hypot(player.x-rose.x,player.y-rose.y);
@@ -163,7 +163,7 @@ function update(dt){
   }
  }
 }
-function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
+function updateCrabs(dt){\n for(const c of crabs){if(!c.alive)continue;const dx=player.x-c.x,dy=player.y-c.y,d=Math.hypot(dx,dy)||1;if(d>20)continue;c.wait-=dt;if(c.wait<=0&&d<=4){c.wait=2;crabDash={x:c.x,y:c.y,tx:player.x,ty:player.y,remaining:Math.min(4,d),crab:c};}else if(!crabDash||crabDash.crab!==c){const step=Math.min(2*dt,d);c.x+=dx/d*step;c.y+=dy/d*step;}}\n if(crabDash){const q=crabDash,dx=q.tx-q.x,dy=q.ty-q.y,d=Math.hypot(dx,dy)||1,step=Math.min(2*dt,q.remaining,d);q.x+=dx/d*step;q.y+=dy/d*step;q.remaining-=step;q.crab.x=q.x;q.crab.y=q.y;if(Math.hypot(player.x-q.x,player.y-q.y)<.65){player.hp=Math.max(0,player.hp-5);crabDash=null;}else if(q.remaining<=0||d<=.1)crabDash=null;}\n if(!crabs.some(c=>c.alive)&&!player.genScene&&Math.hypot(player.x-generalK.x,player.y-generalK.y)<=20)startGeneralKScene();\n}\nfunction startGeneralKScene(){player.genScene=true;clearInput();cutsceneQueue=[[\"제너럴 K\",\"여깁니다 여기!\"],[\"나레이션\",\"화면이 어두워진다. 김희범과 제너럴 K는 임시 캠프의 통나무 옆으로 이동한다.\"],[\"제너럴 K\",\"뵙게 되어서 인사드립니다. 제너럴 K 입니다.\"],[\"김희범\",\"전 김희범 입니다. 그 혹시...\"],[\"나레이션\",\"(로즈 페르디난트를 눕힌다)\"],[\"나레이션\",\"(로즈 페르디난트가 누움)\"],[\"김희범\",\"치료가 가능하신지...\"],[\"제너럴 K\",\"...!\"],[\"나레이션\",\"화면이 어두워진다. 로즈 페르디난트의 부상은 모두 치료되었지만, 아직 깨어나지 않았다.\"],[\"제너럴 K\",\"이것도 인연인데 뭉쳐서 다닙시다.\"],[\"김희범\",\"좋습니다.\"],[\"나레이션\",\"로즈 페르디난트와 제너럴 K가 동료로 추가되었습니다.\"]];player.x=82;player.y=34;player.hp=100;player.rose=true;player.generalK=true;advanceCutscene();save();}\nfunction obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
  const worldW=cols*tile,worldH=rows*tile;
