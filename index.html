@@ -181,6 +181,7 @@ function update(dt){
   }
  }
 }
+function crabSpotFree(x,y,self){return crabs.every(other=>other===self||!other.alive||Math.hypot(x-other.x,y-other.y)>=.78);}
 function updateCrabs(dt){
  for(const crab of crabs){
   if(!crab.alive)continue;
@@ -188,7 +189,7 @@ function updateCrabs(dt){
   if(d>20){crab.dash=null;continue;}
   if(crab.dash){
    const q=crab.dash,vx=q.tx-q.x,vy=q.ty-q.y,dist=Math.hypot(vx,vy)||1,step=Math.min(8*dt,q.left,dist),ox=q.x,oy=q.y;
-   q.x+=vx/dist*step;q.y+=vy/dist*step;q.left-=step;crab.x=q.x;crab.y=q.y;
+   const nx=q.x+vx/dist*step,ny=q.y+vy/dist*step;if(crabSpotFree(nx,ny,crab)){q.x=nx;q.y=ny;q.left-=step;crab.x=q.x;crab.y=q.y;}else{q.left=0;}
    const sx=q.x-ox,sy=q.y-oy,l2=sx*sx+sy*sy,t=l2?Math.max(0,Math.min(1,((player.x-ox)*sx+(player.y-oy)*sy)/l2)):0;
    if(Math.hypot(player.x-(ox+sx*t),player.y-(oy+sy*t))<=.72){player.hp=Math.max(0,player.hp-5);playSfx("damage");crab.dash=null;crab.wait=2;}
    else if(q.left<=.001||dist<=.05){crab.dash=null;crab.wait=2;}
@@ -196,7 +197,7 @@ function updateCrabs(dt){
   }
   crab.wait=Math.max(0,crab.wait-dt);
   if(d<=4&&crab.wait<=0){crab.wait=2;crab.dash={x:crab.x,y:crab.y,tx:player.x,ty:player.y,left:Math.min(4,d)};playSfx("crab");continue;}
-  const step=Math.min(2*dt,Math.max(0,d-.65));if(step>0){crab.x+=dx/d*step;crab.y+=dy/d*step;}
+  const step=Math.min(2*dt,Math.max(0,d-.65));if(step>0){const nx=crab.x+dx/d*step,ny=crab.y+dy/d*step;if(crabSpotFree(nx,ny,crab)){crab.x=nx;crab.y=ny;}}
  }
  if(!crabs.some(crab=>crab.alive)&&!player.genScene&&Math.hypot(player.x-generalK.x,player.y-generalK.y)<=20)startGeneralKScene();
 }
@@ -259,7 +260,7 @@ function render(){
  const gx=generalK.x*tile+tile/2-camX,gy=generalK.y*tile+tile/2-camY;
  ctx.fillStyle="#26384a";ctx.beginPath();ctx.arc(gx,gy,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#39bdf4";ctx.beginPath();ctx.arc(gx,gy,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",gx,gy-18);
  ctx.fillStyle="#4e9fb8";ctx.font="bold 15px sans-serif";ctx.fillText("야한 바다",67*tile-camX,25*tile-camY);
- for(const crab of crabs){if(!crab.alive)continue;const cx=crab.x*tile+tile/2-camX,cy=crab.y*tile+tile/2-camY;ctx.fillStyle="#a94b35";ctx.beginPath();ctx.ellipse(cx,cy,13,9,0,0,Math.PI*2);ctx.fill();ctx.fillRect(cx-19,cy-3,9,5);ctx.fillRect(cx+10,cy-3,9,5);ctx.fillRect(cx-10,cy-12,5,7);ctx.fillRect(cx+5,cy-12,5,7);ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-5,3,3);ctx.fillRect(cx+4,cy-5,3,3);ctx.fillStyle="#111";ctx.fillRect(cx-5,cy-4,1,1);ctx.fillRect(cx+5,cy-4,1,1);ctx.fillStyle="#111";ctx.fillRect(cx-14,cy-20,28,4);ctx.fillStyle="#e84a4a";ctx.fillRect(cx-14,cy-20,28*crab.hp/100,4);}
+ for(const crab of crabs){if(!crab.alive)continue;const cx=crab.x*tile+tile/2-camX,cy=crab.y*tile+tile/2-camY;ctx.fillStyle="#a94b35";ctx.beginPath();ctx.ellipse(cx,cy,13,9,0,0,Math.PI*2);ctx.fill();ctx.fillRect(cx-19,cy-3,9,5);ctx.fillRect(cx+10,cy-3,9,5);ctx.fillRect(cx-10,cy-12,5,7);ctx.fillRect(cx+5,cy-12,5,7);ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-5,3,3);ctx.fillRect(cx+4,cy-5,3,3);ctx.fillStyle="#111";ctx.fillRect(cx-5,cy-4,1,1);ctx.fillRect(cx+5,cy-4,1,1);ctx.fillStyle="#111";ctx.fillRect(cx-14,cy-20,28,4);ctx.fillStyle="#e84a4a";ctx.fillRect(cx-14,cy-20,28*crab.hp/100,4);ctx.fillStyle="#111b";ctx.fillRect(cx-18,cy-32,36,10);ctx.fillStyle="#ffe28a";ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText(crab.dash?"돌진!":crab.wait.toFixed(1)+"초",cx,cy-24);}
  if(player.hasSword){
  // Weapon attack-range preview: 150-degree cone, 3 tiles in facing direction.
  const pcx=player.x*tile+tile/2-camX,pcy=player.y*tile+tile/2-camY;
@@ -271,11 +272,6 @@ function render(){
  ctx.fillStyle="#0003";ctx.beginPath();ctx.ellipse(px,py+9,11,4,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle="#42d9a0";ctx.beginPath();ctx.ellipse(px,py,11,12,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#1b9b78";ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle="#123f37";ctx.fillRect(px-4,py-2,2,2);ctx.fillRect(px+4,py-2,2,2);
- // Visible party sprites follow the player; action beats in the cutscene are not spoken by narration.
- if(player.generalK||player.genScene){
-  const kx=px-25,ky=py+5;ctx.fillStyle="#26384a";ctx.beginPath();ctx.ellipse(kx,ky+5,11,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#496b8b";ctx.fillRect(kx-8,ky-9,16,17);ctx.fillStyle="#d9c7a6";ctx.beginPath();ctx.arc(kx,ky-14,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c6d4e4";ctx.fillRect(kx-8,ky-22,16,7);ctx.fillStyle="#253329";ctx.font="11px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",kx,ky-29);
-  if(player.rose||campRoseDown){const rx=px+26,ry=py+8;ctx.fillStyle="#3b4c70";ctx.beginPath();ctx.ellipse(rx,ry+5,13,7,-.2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#d7b3a5";ctx.beginPath();ctx.arc(rx+7,ry-2,6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#b34d59";ctx.beginPath();ctx.ellipse(rx-2,ry+1,5,8,.3,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="11px sans-serif";ctx.fillText("로즈 페르디난트",rx,ry-17);}
- }
  if(player.hasSword){ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px+facing.x*9,py+facing.y*9);ctx.lineTo(px+facing.x*19,py+facing.y*19);ctx.stroke();}
  ctx.textAlign="left";
  $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("staminaText").textContent=Math.floor(player.stamina)+"/100";$("staminaBar").style.width=player.stamina+"%";
