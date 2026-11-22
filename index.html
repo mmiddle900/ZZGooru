@@ -320,11 +320,11 @@ document.querySelectorAll("[data-dir]").forEach(b=>{
  b.addEventListener("click",e=>{e.preventDefault();if(dialogue)return;const v={up:[0,-.55],down:[0,.55],left:[-.55,0],right:[.55,0]}[d];if(v){const nx=player.x+v[0],ny=player.y+v[1];if(pass(nx,ny)){player.x=nx;player.y=ny;facing={x:v[0],y:v[1]};render();}}});
 });
 const sprintBtn=$("sprintBtn");
-sprintBtn.addEventListener("pointerdown",e=>{unlockAudio();e.preventDefault();sprintBtn.setPointerCapture?.(e.pointerId);pressed.run=true;});
+sprintBtn.addEventListener("pointerdown",e=>{unlockAudio();playSfx("interact");e.preventDefault();sprintBtn.setPointerCapture?.(e.pointerId);pressed.run=true;});
 ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>sprintBtn.addEventListener(ev,()=>pressed.run=false));
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
-$("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};crabs.forEach(c=>{c.hp=100;c.alive=true;c.wait=1.5;});crabDash=null;enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+$("save").onclick=()=>{unlockAudio();playSfx("interact");save();$("status").textContent="저장 완료";};
+$("reset").onclick=()=>{unlockAudio();playSfx("interact");if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false,generalK:false,genScene:false};crabs.forEach(c=>{c.hp=100;c.alive=true;c.wait=1.5;});crabDash=null;enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
 load();enemy.alive=false;pressed={};heldKeys.clear();
 // 저장 좌표가 나무/벽 충돌 안에 갇혀 있으면 가장 가까운 이동 가능한 좌표로 복구
 if(!pass(player.x,player.y)){let found=false;for(let radius=1;radius<=12&&!found;radius++){for(let oy=-radius;oy<=radius&&!found;oy++)for(let ox=-radius;ox<=radius&&!found;ox++){if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;const nx=player.x+ox,ny=player.y+oy;if(pass(nx,ny)){player.x=nx;player.y=ny;found=true;}}}}
