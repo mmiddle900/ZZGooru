@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v12";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -120,12 +120,47 @@ function attack(){
  }
  render();
 }
+let audioCtx=null,footNoise=null,stepTimer=0;
+function unlockAudio(){
+ try{
+  if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();const n=Math.floor(audioCtx.sampleRate*.22);footNoise=audioCtx.createBuffer(1,n,audioCtx.sampleRate);const data=footNoise.getChannelData(0);for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*(.7*(1-i/n));}
+  if(audioCtx.state==="suspended")audioCtx.resume();
+ }catch(e){}
+}
+function groundType(x,y){
+ if(pathAt(x,y))return "path";
+ let nearbyTrees=0;for(let ty=Math.floor(y)-1;ty<=Math.floor(y)+1;ty++)for(let tx=Math.floor(x)-1;tx<=Math.floor(x)+1;tx++)if(treeAt(tx,ty))nearbyTrees++;
+ return nearbyTrees>=3?"forest":"grass";
+}
+function playFootstep(type,running){
+ if(!audioCtx||audioCtx.state!=="running"||!footNoise)return;
+ const now=audioCtx.currentTime;
+ const src=audioCtx.createBufferSource();src.buffer=footNoise;
+ const filter=audioCtx.createBiquadFilter();filter.type="lowpass";
+ filter.frequency=type==="path"?(running?1500:1100):type==="forest"?900:1300;
+ const gain=audioCtx.createGain();
+ gain.gain.setValueAtTime(type==="grass"?.035:type==="forest"?.055:.045,now);
+ gain.gain.exponentialRampToValueAtTime(.001,now+.11);
+ src.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
+ src.start(now);src.stop(now+.12);
+ if(type==="path"){
+  const osc=audioCtx.createOscillator(),og=audioCtx.createGain();osc.type="sine";osc.frequency.setValueAtTime(running?105:82,now);osc.frequency.exponentialRampToValueAtTime(45,now+.07);
+  og.gain.setValueAtTime(.035,now);og.gain.exponentialRampToValueAtTime(.001,now+.08);osc.connect(og);og.connect(audioCtx.destination);osc.start(now);osc.stop(now+.09);
+ }
+}
 function update(dt){
  if(dialogue)return;
  attackWait=Math.max(0,attackWait-dt);enemyWait=Math.max(0,enemyWait-dt);
  let dx=(pressed.right?1:0)-(pressed.left?1:0),dy=(pressed.down?1:0)-(pressed.up?1:0);
  const moving=!!(dx||dy);
  const sprinting=moving&&pressed.run&&player.stamina>0;
+ if(moving){
+  stepTimer-=dt;
+  if(stepTimer<=0){
+   playFootstep(groundType(player.x,player.y),sprinting);
+   stepTimer=sprinting?.30:.43;
+  }
+ }else stepTimer=0;
  if(sprinting)player.stamina=Math.max(0,player.stamina-5*dt);
  else player.stamina=Math.min(100,player.stamina+(moving?1:2)*dt);
  if(moving){
@@ -197,6 +232,7 @@ function dir(e){
 }
 function clearInput(){pressed={};}
 document.addEventListener("keydown",e=>{
+ unlockAudio();
  const d=dir(e);
  const action=e.code==="Space"||e.code==="Enter"||e.key===" ";
  const attackKey=["KeyZ","KeyJ"].includes(e.code)||["z","j"].includes((e.key||"").toLowerCase());
@@ -216,12 +252,12 @@ window.addEventListener("blur",clearInput);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)clearInput();});
 document.querySelectorAll("[data-dir]").forEach(b=>{
  const d=b.dataset.dir;
- b.addEventListener("pointerdown",e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);pressed[d]=true;});
+ b.addEventListener("pointerdown",e=>{unlockAudio();e.preventDefault();b.setPointerCapture?.(e.pointerId);pressed[d]=true;});
  const release=e=>{pressed[d]=false;};
  ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,release));
 });
 const sprintBtn=$("sprintBtn");
-sprintBtn.addEventListener("pointerdown",e=>{e.preventDefault();sprintBtn.setPointerCapture?.(e.pointerId);pressed.run=true;});
+sprintBtn.addEventListener("pointerdown",e=>{unlockAudio();e.preventDefault();sprintBtn.setPointerCapture?.(e.pointerId);pressed.run=true;});
 ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>sprintBtn.addEventListener(ev,()=>pressed.run=false));
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
