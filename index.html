@@ -4,14 +4,14 @@
 *{box-sizing:border-box}body{margin:0;background:#10131b;color:#f5f6fa;font-family:system-ui,"Malgun Gothic",sans-serif;display:flex;justify-content:center;padding:12px}main{width:min(960px,100%)}header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px;background:#202635;border:1px solid #394357;border-radius:12px 12px 0 0}h1{font-size:18px;margin:0}button{background:#344057;color:white;border:1px solid #64718b;border-radius:9px;padding:10px 14px;font:inherit;touch-action:manipulation}button:active{background:#566782}#stage{position:relative;background:#111;overflow:hidden;border:1px solid #394357;border-top:0}canvas{display:block;width:100%;image-rendering:pixelated;touch-action:none}.hud{padding:10px;background:#202635;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.inventory{display:flex;align-items:center;gap:10px;padding:10px;background:#171d29;border:1px solid #394357;border-top:0}.inventory-label{font-size:13px;color:#aeb8ca;font-weight:700}.slots{display:flex;gap:6px}.slot{width:48px;height:48px;padding:3px;border-radius:6px;background:#0e121a;border:2px solid #56627a;display:flex;align-items:center;justify-content:center;position:relative}.slot.empty{border-style:dashed;color:#56627a;font-size:20px}.slot .item-icon{font-size:25px}.slot .item-name{position:absolute;bottom:1px;left:0;right:0;font-size:8px;text-align:center;background:#0009;color:#fff;line-height:12px}.help{color:#aeb8ca;font-size:13px}.dialog{position:absolute;left:3%;right:3%;bottom:3%;background:#111827f2;border:3px solid #d8deea;border-radius:10px;padding:14px;box-shadow:0 4px 0 #0008}.speaker{color:#ffe28a;font-weight:800;margin-bottom:6px}.line{white-space:pre-wrap;line-height:1.6;min-height:48px}.dialog button{margin-top:10px;float:right}.mobile{display:none;justify-content:space-between;align-items:center;gap:12px;padding:12px;background:#202635}.combat-hud{padding:8px 12px;background:#111827;display:flex;gap:12px;align-items:center;font-size:13px}.bar{height:10px;background:#3a2630;border:1px solid #70505b;border-radius:8px;overflow:hidden;flex:1;max-width:180px}.bar span{display:block;height:100%;background:#e65a69;width:100%}.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,40px);gap:4px}.pad button{padding:0;font-size:20px}.pad button:nth-child(1){grid-column:2}.pad button:nth-child(2){grid-column:1;grid-row:2}.pad button:nth-child(3){grid-column:2;grid-row:2}.pad button:nth-child(4){grid-column:3;grid-row:2}@media(max-width:650px){body{padding:0}.mobile{display:flex}header{border-radius:0}h1{font-size:15px}button{padding:9px 10px}.help{font-size:12px}}
 </style></head><body><main><header><h1>김희범과 레치타티보</h1><div><button id="save">저장</button> <button id="reset">처음부터</button></div></header>
 <div id="stage"><canvas id="map" width="640" height="416" aria-label="RPG 맵"></canvas><div id="dialog" class="dialog" hidden><div class="speaker" id="speaker"></div><div class="line" id="line"></div><button id="advance">확인 ▶</button></div></div>
-<div class="inventory"><span class="inventory-label">인벤토리</span><div class="slots"><div id="slot1" class="slot empty" title="비어 있음">·</div><div id="slot2" class="slot empty" title="비어 있음">·</div><div id="slot3" class="slot empty" title="비어 있음">·</div><div id="slot4" class="slot empty" title="비어 있음">·</div><div id="slot5" class="slot empty" title="비어 있음">·</div></div></div><div class="combat-hud"><span>김희범 HP <b id="hpText">100/100</b></span><div class="bar"><span id="hpBar"></span></div><span id="enemyText">숲의 슬라임: 100 HP</span></div><div class="hud"><span id="status">김희범(슬라임) · 레치타티보</span><span class="help">이동: 방향키 / WASD · 상호작용: Space 또는 Enter</span></div>
+<div class="inventory"><span class="inventory-label">인벤토리</span><div class="slots"><div id="slot1" class="slot empty" title="비어 있음">·</div><div id="slot2" class="slot empty" title="비어 있음">·</div><div id="slot3" class="slot empty" title="비어 있음">·</div><div id="slot4" class="slot empty" title="비어 있음">·</div><div id="slot5" class="slot empty" title="비어 있음">·</div></div></div><div class="combat-hud"><span>김희범 HP <b id="hpText">100/100</b></span><div class="bar"><span id="hpBar"></span></div><span id="enemyText">주변을 조사하자</span><span>스테미나 <b id="staminaText">100/100</b></span><div class="bar" style="background:#263b2d;border-color:#55775b"><span id="staminaBar" style="background:#55d68a;width:100%"></span></div></div><div class="hud"><span id="status">김희범(슬라임) · 레치타티보</span><span class="help">이동: 방향키 / WASD · 상호작용: Space 또는 Enter</span></div>
 <div class="mobile"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><div style="display:flex;gap:8px"><button id="action">조사 / 대화</button><button id="attackBtn">검 공격</button></div></div>
 </main>
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v10";
-let player={x:12,y:35,hp:100,hasSword:false,map:1,letter:false,rose:false};
+let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
@@ -37,7 +37,20 @@ function tileBlocked(x,y){
  if((x>=65&&x<=69&&y>=28&&y<=31)||(x>=70&&x<=73&&y>=29&&y<=32))return true;
  return false;
 }
-function pass(x,y){return !tileBlocked(Math.floor(x-.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y-.22))&&!tileBlocked(Math.floor(x-.22),Math.floor(y+.22))&&!tileBlocked(Math.floor(x+.22),Math.floor(y+.22));}
+// 캐릭터 원형 충돌 판정: 모서리만 검사하지 않고 주변 타일 사각형과 원의 거리로 판정
+const playerRadius=.34;
+function pass(cx,cy){
+ const minX=Math.floor(cx-playerRadius),maxX=Math.floor(cx+playerRadius);
+ const minY=Math.floor(cy-playerRadius),maxY=Math.floor(cy+playerRadius);
+ for(let ty=minY;ty<=maxY;ty++)for(let tx=minX;tx<=maxX;tx++){
+  if(!tileBlocked(tx,ty))continue;
+  const closestX=Math.max(tx,Math.min(cx,tx+1));
+  const closestY=Math.max(ty,Math.min(cy,ty+1));
+  const ox=cx-closestX,oy=cy-closestY;
+  if(ox*ox+oy*oy<playerRadius*playerRadius)return false;
+ }
+ return true;
+}
 function talk(s,speaker="나레이션"){pressed={};dialogue=true;$("dialog").hidden=false;$("speaker").textContent=speaker;$("line").textContent=s;}
 function playIntro(){
  cutsceneQueue=[
@@ -94,8 +107,20 @@ function update(dt){
  if(dialogue)return;
  attackWait=Math.max(0,attackWait-dt);enemyWait=Math.max(0,enemyWait-dt);
  let dx=(pressed.right?1:0)-(pressed.left?1:0),dy=(pressed.down?1:0)-(pressed.up?1:0);
- if(dx||dy){const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};const speed=3.2,nx=player.x+dx*speed*dt,ny=player.y+dy*speed*dt;if(pass(nx,player.y))player.x=nx;if(pass(player.x,ny))player.y=ny;}
-
+ const moving=!!(dx||dy);
+ const sprinting=moving&&pressed.run&&player.stamina>0;
+ if(sprinting)player.stamina=Math.max(0,player.stamina-5*dt);
+ else player.stamina=Math.min(100,player.stamina+(moving?1:2)*dt);
+ if(moving){
+  const l=Math.hypot(dx,dy);dx/=l;dy/=l;facing={x:dx,y:dy};
+  const speed=3.2*(sprinting?1.5:1);
+  // 작은 단계로 나눠 이동해 벽/나무를 통과하는 현상 방지, 축별 판정으로 벽을 따라 이동 가능
+  const distance=speed*dt,steps=Math.max(1,Math.ceil(distance/.08)),stepX=dx*distance/steps,stepY=dy*distance/steps;
+  for(let i=0;i<steps;i++){
+   if(pass(player.x+stepX,player.y))player.x+=stepX;
+   if(pass(player.x,player.y+stepY))player.y+=stepY;
+  }
+ }
 }
 function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(s,x*tile+16,y*tile+16);ctx.textAlign="left";ctx.textBaseline="alphabetic";}
 function render(){
@@ -144,18 +169,18 @@ function render(){
  ctx.fillStyle="#123f37";ctx.fillRect(px-4,py-2,2,2);ctx.fillRect(px+4,py-2,2,2);
  if(player.hasSword){ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px+facing.x*9,py+facing.y*9);ctx.lineTo(px+facing.x*19,py+facing.y*19);ctx.stroke();}
  ctx.textAlign="left";
- $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";
+ $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("staminaText").textContent=Math.floor(player.stamina)+"/100";$("staminaBar").style.width=player.stamina+"%";
  $("enemyText").textContent=player.rose?"동료: 로즈 페르디난트":"주변을 조사하자";
  const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
  const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
 }
 function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
-document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
-document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;});
+document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key==="Shift")pressed.run=true;if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
+document.addEventListener("keyup",e=>{const d=dir(e.key);if(d)pressed[d]=false;if(e.key==="Shift")pressed.run=false;});
 document.querySelectorAll("[data-dir]").forEach(b=>{const d=b.dataset.dir;b.addEventListener("pointerdown",e=>{e.preventDefault();pressed[d]=true;});["pointerup","pointercancel","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>pressed[d]=false));});
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
-$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
+$("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
 load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
