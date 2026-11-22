@@ -10,7 +10,7 @@
 <script>
 "use strict";
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
-const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v8";
+const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v9";
 let player={x:20,y:26,hp:100,hasSword:false,map:1,letter:false,rose:false};
 let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
@@ -79,40 +79,80 @@ function obj(x,y,s,color){ctx.fillStyle=color;ctx.font="25px sans-serif";ctx.tex
 const mapX=wx=>80+(wx-10)*12,mapY=wy=>75+(wy-8)*12;
 function render(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle="#fdfdfb";ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#fdfdfb";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
  const px=mapX(player.x),py=mapY(player.y),worldScale=10;
  const camX=Math.max(0,Math.min(6400-canvas.width,px*worldScale-canvas.width/2));
  const camY=Math.max(0,Math.min(4160-canvas.height,py*worldScale-canvas.height/2));
- ctx.save();ctx.translate(-camX,-camY);ctx.scale(worldScale,worldScale);
- // Forest map illustration: map features are newly drawn, using the sketch only as a layout reference.
+ ctx.save();
+ ctx.translate(-camX,-camY);
+ ctx.scale(worldScale,worldScale);
  ctx.lineJoin="round";ctx.lineCap="round";
- // winding forest perimeter
- ctx.beginPath();ctx.moveTo(145,260);ctx.bezierCurveTo(108,226,118,169,160,139);ctx.bezierCurveTo(180,100,227,82,263,109);ctx.bezierCurveTo(290,124,292,158,328,164);ctx.bezierCurveTo(359,170,378,143,407,165);ctx.bezierCurveTo(448,189,463,229,445,258);ctx.bezierCurveTo(429,284,399,276,377,297);ctx.bezierCurveTo(347,329,317,354,276,339);ctx.bezierCurveTo(238,326,224,293,190,286);ctx.closePath();
- ctx.fillStyle="#e7efdf";ctx.fill();ctx.strokeStyle="#40563a";ctx.lineWidth=3;ctx.stroke();
- // meadow pockets
+ // 숲 경계
+ ctx.beginPath();
+ ctx.moveTo(145,260);
+ ctx.bezierCurveTo(108,226,118,169,160,139);
+ ctx.bezierCurveTo(180,100,227,82,263,109);
+ ctx.bezierCurveTo(290,124,292,158,328,164);
+ ctx.bezierCurveTo(359,170,378,143,407,165);
+ ctx.bezierCurveTo(448,189,463,229,445,258);
+ ctx.bezierCurveTo(429,284,399,276,377,297);
+ ctx.bezierCurveTo(347,329,317,354,276,339);
+ ctx.bezierCurveTo(238,326,224,293,190,286);
+ ctx.closePath();
+ ctx.fillStyle="#e7efdf";ctx.fill();
+ ctx.strokeStyle="#40563a";ctx.lineWidth=3;ctx.stroke();
+ // 풀밭과 오솔길
  ctx.fillStyle="#d5e5c7";ctx.beginPath();ctx.ellipse(245,192,61,35,-.35,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(360,238,45,25,.4,0,Math.PI*2);ctx.fill();
- // winding trails and two exits
- ctx.strokeStyle="#c8b58c";ctx.lineWidth=19;ctx.beginPath();ctx.moveTo(80,371);ctx.bezierCurveTo(145,342,176,306,222,275);ctx.bezierCurveTo(258,250,278,231,315,238);ctx.bezierCurveTo(352,245,375,278,420,293);ctx.bezierCurveTo(475,311,521,347,584,366);ctx.stroke();
+ ctx.strokeStyle="#c8b58c";ctx.lineWidth=19;ctx.beginPath();
+ ctx.moveTo(80,371);ctx.bezierCurveTo(145,342,176,306,222,275);
+ ctx.bezierCurveTo(258,250,278,231,315,238);
+ ctx.bezierCurveTo(352,245,375,278,420,293);
+ ctx.bezierCurveTo(475,311,521,347,584,366);ctx.stroke();
  ctx.strokeStyle="#f5e9cd";ctx.lineWidth=12;ctx.stroke();
- ctx.strokeStyle="#c8b58c";ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(319,238);ctx.bezierCurveTo(303,202,285,175,293,143);ctx.bezierCurveTo(302,116,331,100,351,75);ctx.stroke();
+ ctx.strokeStyle="#c8b58c";ctx.lineWidth=17;ctx.beginPath();
+ ctx.moveTo(319,238);ctx.bezierCurveTo(303,202,285,175,293,143);
+ ctx.bezierCurveTo(302,116,331,100,351,75);ctx.stroke();
  ctx.strokeStyle="#f5e9cd";ctx.lineWidth=10;ctx.stroke();
- // small branching footpaths
- ctx.strokeStyle="#d4c39f";ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(220,276);ctx.bezierCurveTo(194,251,177,226,169,198);ctx.moveTo(377,278);ctx.bezierCurveTo(390,255,408,243,430,240);ctx.stroke();
- // trees and shrubs, deliberately varied
+ ctx.strokeStyle="#d4c39f";ctx.lineWidth=10;ctx.beginPath();
+ ctx.moveTo(220,276);ctx.bezierCurveTo(194,251,177,226,169,198);
+ ctx.moveTo(377,278);ctx.bezierCurveTo(390,255,408,243,430,240);ctx.stroke();
+ // 나무
  const trees=[[177,164],[207,139],[250,132],[280,165],[332,184],[383,185],[420,207],[413,251],[367,268],[337,311],[286,309],[246,286],[201,262],[157,226],[236,218],[392,221],[299,276],[352,146]];
- for(let i=0;i<trees.length;i++){const [tx,ty]=trees[i];ctx.fillStyle=i%3===0?"#6c8d55":"#789b60";ctx.beginPath();ctx.arc(tx,ty,10+(i%3)*2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#4e7142";ctx.beginPath();ctx.arc(tx-2,ty-3,6,0,Math.PI*2);ctx.fill();}
- // location labels and markers mapped to world coordinates
-  ctx.fillStyle="#263b27";ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.fillText("숲",276,198);
- if(!player.hasSword){const ix=mapX(item.x),iy=mapY(item.y);ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(ix,iy,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("레치타티보",ix,iy+25);}
- if(!player.rose){const rx=mapX(rose.x),ry=mapY(rose.y);ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(rx,ry,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("로즈 페르디난트",rx,ry+26);}
- ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
- // Legend
- ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(20,380,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#168fbd";ctx.font="12px sans-serif";ctx.textAlign="left";ctx.fillText("캐릭터",38,384);
- ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(20,402,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.fillText("아이템",38,406);
- $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("enemyText").textContent=player.rose?"동료: 로즈 페르디난트":"주변을 조사하자";
- const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
- const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
+ for(let i=0;i<trees.length;i++){
+  const [tx,ty]=trees[i];
+  ctx.fillStyle=i%3===0?"#6c8d55":"#789b60";
+  ctx.beginPath();ctx.arc(tx,ty,10+(i%3)*2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#4e7142";ctx.beginPath();ctx.arc(tx-2,ty-3,6,0,Math.PI*2);ctx.fill();
+ }
+ ctx.fillStyle="#263b27";ctx.font="bold 18px sans-serif";ctx.textAlign="center";ctx.fillText("숲",276,198);
+ if(!player.hasSword){
+  const ix=mapX(item.x),iy=mapY(item.y);
+  ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(ix,iy,8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("레치타티보",ix,iy+25);
+ }
+ if(!player.rose){
+  const rx=mapX(rose.x),ry=mapY(rose.y);
+  ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(rx,ry,9,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#333";ctx.font="13px sans-serif";ctx.fillText("로즈 페르디난트",rx,ry+26);
+ }
+ ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
+ ctx.restore();
+ // 화면 고정 범례
+ ctx.fillStyle="#00a6e8";ctx.beginPath();ctx.arc(20,380,9,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#168fbd";ctx.font="12px sans-serif";ctx.textAlign="left";ctx.fillText("캐릭터",38,384);
+ ctx.fillStyle="#858585";ctx.beginPath();ctx.arc(20,402,9,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#777";ctx.fillText("아이템",38,406);
+ $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";
+ $("enemyText").textContent=player.rose?"동료: 로즈 페르디난트":"주변을 조사하자";
+ const slot=$("slot1");
+ if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}
+ else{slot.className="slot empty";slot.textContent="·";}
+ const slot2=$("slot2");
+ if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}
+ else{slot2.className="slot empty";slot2.textContent="·";}
 }
 function dir(k){return ({ArrowUp:"up",w:"up",ArrowDown:"down",s:"down",ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right"})[k];}
 document.addEventListener("keydown",e=>{if(dialogue){if(e.key===" "||e.key==="Enter"){e.preventDefault();closeTalk();}return;}const d=dir(e.key);if(d){e.preventDefault();pressed[d]=true;}if(e.key===" "||e.key==="Enter"){e.preventDefault();interact();}if(e.key.toLowerCase()==="z"||e.key.toLowerCase()==="j")attack();});
