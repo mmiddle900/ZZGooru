@@ -12,7 +12,7 @@
 const canvas=document.getElementById("map"),ctx=canvas.getContext("2d");
 const tile=32,cols=100,rows=100,saveKey="zzgooru_rpg_save_v13";
 let player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};
-let facing={x:0,y:-1},pressed={},last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
+let facing={x:0,y:-1},pressed={},heldKeys=new Set(),last=0,dialogue=false,cutsceneQueue=null,enemy={x:10,y:6,hp:100,alive:false},attackWait=0,enemyWait=0; const item={x:16,y:18},rose={x:23,y:22};
 const $=id=>document.getElementById(id);
 function pathAt(x,y){
  const pts=[[12,35],[18,29],[20,26],[16,18],[21,19],[23,22],[31,24],[39,29],[47,34],[56,34],[65,30],[75,30],[86,36]];
@@ -151,9 +151,9 @@ function playFootstep(type,running){
 function update(dt){
  if(dialogue)return;
  attackWait=Math.max(0,attackWait-dt);enemyWait=Math.max(0,enemyWait-dt);
- let dx=(pressed.right?1:0)-(pressed.left?1:0),dy=(pressed.down?1:0)-(pressed.up?1:0);
+ let dx=((pressed.right||heldKeys.has("right"))?1:0)-((pressed.left||heldKeys.has("left"))?1:0),dy=((pressed.down||heldKeys.has("down"))?1:0)-((pressed.up||heldKeys.has("up"))?1:0);
  const moving=!!(dx||dy);
- const sprinting=moving&&pressed.run&&player.stamina>0;
+ const sprinting=moving&&(pressed.run||heldKeys.has("run"))&&player.stamina>0;
  if(moving){
   stepTimer-=dt;
   if(stepTimer<=0){
@@ -230,7 +230,7 @@ function dir(e){
  const code=e.code||"",key=(e.key||"").toLowerCase();
  return ({ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"})[code]||({w:"up",s:"down",a:"left",d:"right"})[key];
 }
-function clearInput(){pressed={};}
+function clearInput(){pressed={};heldKeys.clear();}
 document.addEventListener("keydown",e=>{
  unlockAudio();
  const d=dir(e);
@@ -240,15 +240,15 @@ document.addEventListener("keydown",e=>{
  if(d||shift||action||attackKey)e.preventDefault();
  // 이동/달리기 입력은 반복 keydown에서도 갱신해 입력 누락을 방지한다.
  if(dialogue){if(action)closeTalk();return;}
- if(d)pressed[d]=true;
- if(shift)pressed.run=true;
+ if(d){pressed[d]=true;heldKeys.add(d);}
+ if(shift){pressed.run=true;heldKeys.add("run");}
  if(e.repeat)return;
  if(action)interact();
  if(attackKey)attack();
 });
 document.addEventListener("keyup",e=>{
- const d=dir(e);if(d)pressed[d]=false;
- if(e.code==="ShiftLeft"||e.code==="ShiftRight")pressed.run=false;
+ const d=dir(e);if(d){pressed[d]=false;heldKeys.delete(d);}
+ if(e.code==="ShiftLeft"||e.code==="ShiftRight"){pressed.run=false;heldKeys.delete("run");}
 });
 window.addEventListener("blur",clearInput);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)clearInput();});
@@ -264,6 +264,9 @@ sprintBtn.addEventListener("pointerdown",e=>{unlockAudio();e.preventDefault();sp
 $("action").onclick=interact;$("attackBtn").onclick=attack;$("advance").onclick=closeTalk;
 $("save").onclick=()=>{save();$("status").textContent="저장 완료";};
 $("reset").onclick=()=>{if(confirm("처음부터 다시 시작할까요?")){localStorage.removeItem(saveKey);player={x:12,y:35,hp:100,stamina:100,hasSword:false,map:1,letter:false,rose:false};enemy={x:10,y:6,hp:100,alive:false};cutsceneQueue=null;dialogue=false;$("dialog").hidden=true;render();playIntro();}};
-load();enemy.alive=false;pressed={};render();if(!localStorage.getItem(saveKey))playIntro();
+load();enemy.alive=false;pressed={};heldKeys.clear();
+// 저장 좌표가 나무/벽 충돌 안에 갇혀 있으면 가장 가까운 이동 가능한 좌표로 복구
+if(!pass(player.x,player.y)){let found=false;for(let radius=1;radius<=12&&!found;radius++){for(let oy=-radius;oy<=radius&&!found;oy++)for(let ox=-radius;ox<=radius&&!found;ox++){if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;const nx=player.x+ox,ny=player.y+oy;if(pass(nx,ny)){player.x=nx;player.y=ny;found=true;}}}}
+render();if(!localStorage.getItem(saveKey))playIntro();
 let lastTime=0;function loop(t){const dt=Math.min((t-lastTime)/1000||0,.04);lastTime=t;update(dt);render();requestAnimationFrame(loop);}requestAnimationFrame(loop);
 </script></body></html>
