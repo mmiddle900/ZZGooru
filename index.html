@@ -102,13 +102,11 @@ function interact(){
 }
 function attack(){
  if(dialogue||!player.hasSword||attackWait>0)return;
- attackWait=.35;
- if(player.map===1&&enemy.alive){
-  const dx=enemy.x-player.x,dy=enemy.y-player.y,d=Math.hypot(dx,dy)||1;
-  if(d<1.55&&(dx*facing.x+dy*facing.y)/d>.1){enemy.hp=Math.max(0,enemy.hp-35);if(enemy.hp===0)enemy.alive=false;}
- }
- render();
+ attackWait=1;
+ for(const crab of crabs){if(!crab.alive)continue;const dx=crab.x-player.x,dy=crab.y-player.y,d=Math.hypot(dx,dy)||1,dot=(dx*facing.x+dy*facing.y)/d;if(d<=3&&dot>=Math.cos(75*Math.PI/180)){crab.hp=Math.max(0,crab.hp-20);if(crab.hp===0)crab.alive=false;}}
+ render();save();
 }
+
 let audioCtx=null,footNoise=null,stepTimer=0;
 function unlockAudio(){
  try{
@@ -203,6 +201,11 @@ function render(){
   ctx.fillStyle="#b34d59";ctx.beginPath();ctx.ellipse(rx-2,ry+1,4,7,.3,0,Math.PI*2);ctx.fill();
   ctx.fillStyle="#263329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("로즈 페르디난트",rx,ry-17);
  }
+ // Crab sprites and General K camp marker
+ const gx=generalK.x*tile+tile/2-camX,gy=generalK.y*tile+tile/2-camY;
+ ctx.fillStyle="#26384a";ctx.beginPath();ctx.arc(gx,gy,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#39bdf4";ctx.beginPath();ctx.arc(gx,gy,9,0,Math.PI*2);ctx.fill();ctx.fillStyle="#253329";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.fillText("제너럴 K",gx,gy-18);
+ ctx.fillStyle="#4e9fb8";ctx.font="bold 15px sans-serif";ctx.fillText("야한 바다",67*tile-camX,25*tile-camY);
+ for(const crab of crabs){if(!crab.alive)continue;const cx=crab.x*tile+tile/2-camX,cy=crab.y*tile+tile/2-camY;ctx.fillStyle="#a94b35";ctx.beginPath();ctx.ellipse(cx,cy,13,9,0,0,Math.PI*2);ctx.fill();ctx.fillRect(cx-19,cy-3,9,5);ctx.fillRect(cx+10,cy-3,9,5);ctx.fillRect(cx-10,cy-12,5,7);ctx.fillRect(cx+5,cy-12,5,7);ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-5,3,3);ctx.fillRect(cx+4,cy-5,3,3);ctx.fillStyle="#111";ctx.fillRect(cx-5,cy-4,1,1);ctx.fillRect(cx+5,cy-4,1,1);ctx.fillStyle="#111";ctx.fillRect(cx-14,cy-20,28,4);ctx.fillStyle="#e84a4a";ctx.fillRect(cx-14,cy-20,28*crab.hp/100,4);}
  const px=player.x*tile+tile/2-camX,py=player.y*tile+tile/2-camY;
  // 김희범: 일정한 22px 슬라임 크기, 카메라 줌과 무관
  ctx.fillStyle="#0003";ctx.beginPath();ctx.ellipse(px,py+9,11,4,0,0,Math.PI*2);ctx.fill();
@@ -211,8 +214,8 @@ function render(){
  if(player.hasSword){ctx.strokeStyle="#e7eaf2";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(px+facing.x*9,py+facing.y*9);ctx.lineTo(px+facing.x*19,py+facing.y*19);ctx.stroke();}
  ctx.textAlign="left";
  $("hpText").textContent=player.hp+"/100";$("hpBar").style.width=player.hp+"%";$("staminaText").textContent=Math.floor(player.stamina)+"/100";$("staminaBar").style.width=player.stamina+"%";
- $("enemyText").textContent=player.rose?"동료: 로즈 페르디난트":"주변을 조사하자";
- const slot=$("slot1");if(player.hasSword){slot.className="slot";slot.innerHTML='<span class="item-icon">⚔️</span><span class="item-name">레치타티보</span>';}else{slot.className="slot empty";slot.textContent="·";}
+ $("enemyText").textContent=crabs.some(c=>c.alive)?"작은 꽃게 "+crabs.filter(c=>c.alive).length+"마리 남음":player.generalK?"동료: 로즈 페르디난트 · 제너럴 K":"제너럴 K에게 가자";
+ const slot=$("slot1");slot.className="slot empty";slot.textContent="·";const weapon=$("weaponSlot");if(player.hasSword){weapon.innerHTML="⚔️<small>레치타티보</small>";$("weaponInfo").textContent="전방 150° · 3칸 · 피해 20 · 쿨타임 1초";}else{weapon.innerHTML="·<small>미장착</small>";$("weaponInfo").textContent="무기를 획득하면 여기에 장착됩니다.";}
  const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
 }
 function dir(e){
