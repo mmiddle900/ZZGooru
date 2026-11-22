@@ -173,7 +173,7 @@ function render(){
  for(let y=sy;y<ey;y++)for(let x=sx;x<ex;x++){
   const px=x*tile-camX,py=y*tile-camY,edge=x<2||y<2||x>=cols-2||y>=rows-2;
   const h=((x*31+y*17+x*y*7)>>>0)%9;
-  ctx.fillStyle=edge?"#34463a":(pathAt(x,y)?"#c8b58a":(h<2?"#6d995b":"#79a766"));
+  ctx.fillStyle=edge?"#34463a":(x>=64&&x<=80&&y>=24&&y<=41?(x>=78?"#4e9fb8":"#d8c58b"):(pathAt(x,y)?"#c8b58a":(h<2?"#6d995b":"#79a766")));
   ctx.fillRect(px,py,tile,tile);
   if(!edge&&!pathAt(x,y)&&h===0){ctx.fillStyle="#8dbb72";ctx.fillRect(px+5,py+7,3,3);ctx.fillRect(px+22,py+20,2,3);}
   if(treeAt(x,y)){
@@ -217,6 +217,7 @@ function render(){
  $("enemyText").textContent=crabs.some(c=>c.alive)?"작은 꽃게 "+crabs.filter(c=>c.alive).length+"마리 남음":player.generalK?"동료: 로즈 페르디난트 · 제너럴 K":"제너럴 K에게 가자";
  const slot=$("slot1");slot.className="slot empty";slot.textContent="·";const weapon=$("weaponSlot");if(player.hasSword){weapon.innerHTML="⚔️<small>레치타티보</small>";$("weaponInfo").textContent="전방 150° · 3칸 · 피해 20 · 쿨타임 1초";}else{weapon.innerHTML="·<small>미장착</small>";$("weaponInfo").textContent="무기를 획득하면 여기에 장착됩니다.";}
  const slot2=$("slot2");if(player.rose){slot2.className="slot";slot2.innerHTML='<span class="item-icon">🔵</span><span class="item-name">로즈</span>';}else{slot2.className="slot empty";slot2.textContent="·";}
+ const slot3=$("slot3");if(player.generalK){slot3.className="slot";slot3.innerHTML='<span class="item-icon">🛡️</span><span class="item-name">제너럴 K</span>';}else{slot3.className="slot empty";slot3.textContent="·";}
 }
 function dir(e){
  const code=e.code||"",key=(e.key||"").toLowerCase();
