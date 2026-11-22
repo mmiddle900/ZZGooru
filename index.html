@@ -38,7 +38,7 @@ function interact(){
  }
  let best=null,bestD=1.65;
  for(const o of objects){const d=Math.hypot(player.x-o.x,player.y-o.y);if(d<bestD){best=o;bestD=d;}}
- if(best)best.run();else talk("대상 가까이 다가가서 조사해 봐.");
+ if(best)best.run();
  save();render();
 }
 function attack(){
